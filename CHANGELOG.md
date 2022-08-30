@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.1.2dev
+- Parsing string literals in notebooks and downloading them if they exist
 
 ## 0.1.1 (2022-08-29)
 - Ignores parsed `pip install` options
