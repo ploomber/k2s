@@ -22,7 +22,7 @@ def test_extract_imports():
 @pytest.mark.parametrize('source, expected', [
     [
         """
-```python
+```sh
 pip install duckdb duckdb-engine pyarrow
 ```
 """,
@@ -34,7 +34,31 @@ pip install duckdb duckdb-engine pyarrow
     ],
     [
         """
-```python
+```sh
+pip install duckdb duckdb-engine pyarrow --upgrade
+```
+""",
+        {
+            'duckdb',
+            'duckdb-engine',
+            'pyarrow',
+        },
+    ],
+    [
+        """
+```sh
+pip install duckdb duckdb-engine pyarrow -U
+```
+""",
+        {
+            'duckdb',
+            'duckdb-engine',
+            'pyarrow',
+        },
+    ],
+    [
+        """
+```sh
 pip install duckdb duckdb-engine pyarrow
 ```
 
@@ -48,7 +72,29 @@ pip install pyarrow
             'pyarrow',
         },
     ],
-])
+    [
+        """
+
+Try locally:
+
+```python
+pip install k2s -U && k2s get ploomber/jupysql/main/examples/nb.ipynb
+```
+
+```
+pip install pyarrow
+```
+""",
+        {'pyarrow'},
+    ],
+],
+                         ids=[
+                             'simple',
+                             'double-dash-option',
+                             'single-dash-option',
+                             'duplicates',
+                             'ignores-itself',
+                         ])
 def test_extract_from_plain_text(tmp_empty, source, expected):
     nb = nbformat.v4.new_notebook()
     nb.cells = [

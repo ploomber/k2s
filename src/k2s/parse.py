@@ -10,11 +10,11 @@ from k2s.env import install
 
 def extract_from_plain_text(text):
     matches = re.findall(r'pip install ([\w \-]+)', text)
-    return list(
-        set([
-            item for sublist in [match.split() for match in matches]
-            for item in sublist
-        ]))
+    deps = set([
+        item for sublist in [match.split() for match in matches]
+        for item in sublist if not item.startswith('-')
+    ])
+    return list(deps - {'k2s'})
 
 
 # NOTE: we copied this from soorgeon
