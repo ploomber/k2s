@@ -17,6 +17,7 @@ def extract_from_plain_text(text):
     return list(deps - {'k2s'})
 
 
+# NOTE: imports might also be from local files, so we should download them
 # NOTE: we copied this from soorgeon
 # https://github.com/ploomber/soorgeon/blob/cb16dc51f326cf21486bff86dfec03b4d1f5c2d7/src/soorgeon/definitions.py#L24
 def packages_used(tree):
