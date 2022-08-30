@@ -29,6 +29,7 @@ DEV = [
     'twine',
     'ipython',
     'jupyter_client',
+    'pkgmt',
 ]
 
 setup(
