@@ -31,7 +31,7 @@ def from_url(url):
 
 
 def from_file(file):
-    env_name = 'my-env'
+    env_name = Path(file).stem + '-env'
 
     nb = json.loads(Path(file).read_text(encoding='utf-8'))
 
