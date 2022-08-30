@@ -12,10 +12,10 @@ import urllib.request
 from k2s.parse import extract_imports
 
 
-def _get_python_folder_and_bin_name():
-    folder = 'Scripts' if os.name == 'nt' else 'bin'
-    bin_name = 'python.exe' if os.name == 'nt' else 'python'
-    return folder, bin_name
+def path_to_bin(env_name, bin):
+    dir = 'Scripts' if os.name == 'nt' else 'bin'
+    bin_name = f'{bin}.exe' if os.name == 'nt' else bin
+    return str(Path(env_name, dir, bin_name))
 
 
 def from_url(url):
@@ -48,8 +48,7 @@ def from_file(file):
     # the virtual environment
     venv.create(env_name, with_pip=True, system_site_packages=False)
 
-    dir_, bin_name = _get_python_folder_and_bin_name()
-    path_to_python = str(Path(env_name, dir_, bin_name))
+    path_to_python = path_to_bin(env_name, 'python')
 
     subprocess.run(
         [path_to_python, '-m', 'pip', 'install', 'pip', '--upgrade'],
@@ -64,18 +63,18 @@ def from_file(file):
 
     print("Lauching Jupyter...")
 
-    if Path(f'{env_name}/bin/jupyter-lab').exists():
-        jupyterlab = f'{env_name}/bin/jupyter-lab'
-    else:
-        jupyterlab = str(Path(sys.prefix, 'bin', 'jupyter-lab'))
-
-    jupyterlab = f'{env_name}/bin/jupyter-lab'
+    # TODO: if jupyter lab is already installed, we can use it (and skip
+    # installation), but we have to make sure that the kernel used is
+    # the one in the venv, not in the parent env
+    path_to_jupyterlab = path_to_bin(env_name, 'jupyter-lab')
 
     print('To exit: CTRL + C')
 
     try:
-        subprocess.run([jupyterlab, file], check=True, capture_output=True)
+        subprocess.run([path_to_jupyterlab, file],
+                       check=True,
+                       capture_output=True)
     except KeyboardInterrupt:
         print('Exiting...')
         print(f'\nTo laucnh again:\n\n'
-              f'{env_name}/bin/jupyter-lab {file}')
+              f'{path_to_jupyterlab} {file}')
