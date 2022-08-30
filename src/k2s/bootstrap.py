@@ -3,7 +3,6 @@ pip install k2s --upgrade && k2s get ploomber/jupysql/doc/nb.ipynb
 """
 import os
 import json
-import sys
 from pathlib import Path, PurePosixPath
 import subprocess
 import venv
