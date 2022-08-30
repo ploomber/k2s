@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import pytest
 import nbformat
 
@@ -16,7 +19,9 @@ def test_extract_imports():
         nbformat.v4.new_code_cell(source="import sklearn"),
     ]
 
-    assert parse.extract_imports(nb) == ['pandas', 'scikit-learn']
+    assert parse.extract_imports_from_notebook(nb) == [
+        'pandas', 'scikit-learn'
+    ]
 
 
 @pytest.mark.parametrize('source, expected', [
@@ -119,10 +124,95 @@ pip install duckdb duckdb-engine pyarrow
         nbformat.v4.new_markdown_cell(source=md_source)
     ]
 
-    assert set(parse.extract_imports(nb)) == {
+    assert set(parse.extract_imports_from_notebook(nb)) == {
         'pandas',
         'scikit-learn',
         'duckdb',
         'duckdb-engine',
         'pyarrow',
     }
+
+
+@pytest.mark.parametrize('source, expected', [
+    [
+        """
+df = pd.read_csv("some-file.txt")
+
+read('notebook.ipynb')
+
+nbformat.read('another.ipynb')
+
+path = Path("path/to/file.ext")
+""", {
+            'some-file.txt',
+            'notebook.ipynb',
+            'another.ipynb',
+            'path/to/file.ext',
+        }
+    ],
+    [
+        """
+read(fp='notebook.ipynb')
+
+nbformat.read('another.ipynb', another="value")
+""", {
+            'notebook.ipynb',
+            'another.ipynb',
+        }
+    ],
+    [
+        """
+invalid python code
+""",
+        set(),
+    ],
+    [
+        """
+df = pd.read_parquet("some-file.parquet")
+
+df_2 = pd.read_csv("some-file.csv")
+""",
+        {
+            'some-file.parquet',
+            'some-file.csv',
+        },
+    ],
+    [
+        """
+df = pd.read_sql("SELECT * FROM table", conn)
+""",
+        set(),
+    ],
+    [
+        """
+df = pd.read_csv(path)
+""",
+        set(),
+    ],
+],
+                         ids=[
+                             'various',
+                             'kwargs',
+                             'invalid',
+                             'pandas',
+                             'read_sql',
+                             'variable',
+                         ])
+def test_local_files(source, expected):
+    assert parse.local_files(source) == expected
+
+
+def test_download_files(tmp_empty):
+    source = """
+Path("with-files-something.txt")
+
+Path("non-existing-file.txt")
+"""
+
+    url = ("https://raw.githubusercontent.com/ploomber/k2s/main"
+           "/examples/with-files.ipynb")
+
+    parse.download_files(source, url=url)
+
+    assert os.listdir() == ["with-files-something.txt"]
+    assert Path("with-files-something.txt").read_text() == 'hello!\n'

@@ -30,6 +30,7 @@ DEV = [
     'ipython',
     'jupyter_client',
     'pkgmt',
+    'ipdb',
 ]
 
 setup(

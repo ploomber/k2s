@@ -1,11 +1,82 @@
+import json
+import ast
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import urllib.request
+from urllib.parse import urlsplit, urlunsplit
+from urllib.error import HTTPError
 
 import parso
 from isort import place_module
 
 from k2s.env import install
+
+
+# FIXME: downloaded files might depend on other files, so we have to download
+# them as well
+def download_files(source, url):
+    files = local_files(source)
+
+    split = urlsplit(url)
+    split = split._replace(path=str(PurePosixPath(split.path).parent))
+    base = urlunsplit(split)
+
+    deps = set()
+
+    # TODO: download in parallel
+    for file in files:
+        try:
+            # TODO: if .py or .ipynb, there might be more packages to install
+            urllib.request.urlretrieve(f'{base}/{file}', file)
+            print(f'Downloaded filed used in notebook: {file}')
+
+            if Path(file).suffix == '.py':
+                deps_ = extract_imports_from_path_to_script(file)
+                deps = deps | set(deps_)
+            elif Path(file).suffix == '.ipynb':
+                deps_ = extract_imports_from_path_to_notebook(file)
+                deps = deps | set(deps_)
+
+        except HTTPError as e:
+            print("It appears the notebook is using "
+                  f"a file named {file!r}, but downloading it failed: {e}")
+
+    return deps
+
+
+def local_files(source):
+    # nbformat.read("notebook.ipynb") or jupytext.read("notebook.ipynb")
+    # Path("file.txt")
+    # pd.read_{fmt}("path.ext")
+    mod = parso.parse(source)
+
+    leaf = mod.get_first_leaf()
+
+    targets = {'read', 'Path'}
+
+    # TODO: ploomber-specific: pipeline.yaml (DAGSpec.find())
+    # or ploomber build
+
+    paths = []
+
+    while leaf:
+        if leaf.value in targets or (leaf.value.startswith('read_')
+                                     and leaf.value != 'read_sql'):
+            arg = leaf.get_next_leaf().get_next_leaf()
+
+            if arg.type == 'string':
+                paths.append(ast.literal_eval(arg.value))
+
+            # keyword arg
+            op = arg.get_next_leaf()
+
+            if op.type == 'operator' and op.value == '=':
+                paths.append(ast.literal_eval(op.get_next_leaf().value))
+
+        leaf = leaf.get_next_leaf()
+
+    return set(paths)
 
 
 def extract_from_plain_text(text):
@@ -73,8 +144,7 @@ def packages_used(tree):
     return sorted(set(pkgs_final))
 
 
-def extract_imports(nb):
-
+def extract_code(nb):
     try:
         code = '\n'.join([
             cell['source'] for cell in nb['cells']
@@ -87,11 +157,34 @@ def extract_imports(nb):
             if c['cell_type'] == 'code'
         ])
 
+    return code
+
+
+def to_text(nb):
     try:
         plain = '\n'.join([cell['source'] for cell in nb['cells']])
     except TypeError:
         # # if passed a notebook read using json instead of nbformat
         plain = '\n'.join(['\n'.join(c['source']) for c in nb['cells']])
+
+    return plain
+
+
+def extract_imports_from_path_to_notebook(path):
+    nb = json.loads(Path(path).read_text(encoding='utf-8'))
+    return extract_imports_from_notebook(nb)
+
+
+def extract_imports_from_path_to_script(path):
+    code = Path(path).read_text()
+    return packages_used(parso.parse(code)) + extract_from_plain_text(code)
+
+
+def extract_imports_from_notebook(nb):
+    code = extract_code(nb)
+    # TODO: maybe use the notebook's JSON string? cause here we're ignoring
+    # code cells that might have comments such as "pip install something"
+    plain = to_text(nb)
 
     return packages_used(parso.parse(code)) + extract_from_plain_text(plain)
 
@@ -106,7 +199,7 @@ def bootstrap_env(path_to_notebook, inline=False, verbose=False):
 
     print('Parsing notebook...')
     nb = nbformat.read(path_to_notebook, as_version=nbformat.NO_CONVERT)
-    imports = extract_imports(nb)
+    imports = extract_imports_from_notebook(nb)
     imports = set(imports) - {'k2s'}
     imports_str = ', '.join(imports)
     print(f'Found: {imports_str}. Installing...')

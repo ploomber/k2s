@@ -8,7 +8,8 @@ import subprocess
 import venv
 import urllib.request
 
-from k2s.parse import extract_imports
+from k2s.parse import (extract_imports_from_notebook, download_files,
+                       extract_code)
 
 
 def path_to_bin(env_name, bin):
@@ -26,15 +27,22 @@ def from_url(url):
 
     file = PurePosixPath(url).name
     urllib.request.urlretrieve(url, file)
-    return from_file(file)
+    return from_file(file, url=url)
 
 
-def from_file(file):
+def from_file(file, url=None):
     env_name = Path(file).stem + '-env'
 
     nb = json.loads(Path(file).read_text(encoding='utf-8'))
 
-    deps = extract_imports(nb)
+    deps = extract_imports_from_notebook(nb)
+
+    # FIXME: we're runnign extract_code inside extract_imports already, we
+    # should refactor
+    if url:
+        deps_extra = download_files(extract_code(nb), url)
+
+    deps = list(set(deps) | deps_extra)
 
     print("Creating virtual environment...")
     print(f"Installing: {', '.join(deps)}")
@@ -54,11 +62,10 @@ def from_file(file):
         check=True,
         capture_output=True)
 
-    subprocess.run(
-        [path_to_python, '-m', 'pip', 'install', 'jupyterlab', '--quiet'] +
-        deps,
-        check=True,
-        capture_output=False)
+    subprocess.run([path_to_python, '-m', 'pip', 'install', 'jupyterlab'] +
+                   deps + ['--quiet'],
+                   check=True,
+                   capture_output=False)
 
     print("Lauching Jupyter...")
 
