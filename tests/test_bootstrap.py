@@ -61,11 +61,12 @@ def test_downloads_files(tmp_empty, monkeypatch, path, expected_file,
         ['kaas', 'get', f'ploomber/k2s/main/{path}'],
     )
 
-    mock_subprocess = Mock()
-    mock_subprocess.Popen().stdout.readline.return_value = b''
-    mock_subprocess.Popen().poll.return_value = 0
+    mock = Mock()
+    mock().stdout.readline.return_value = b''
+    mock().poll.return_value = 0
 
-    monkeypatch.setattr(bootstrap, 'subprocess', mock_subprocess)
+    monkeypatch.setattr(bootstrap, 'subprocess_run', Mock())
+    monkeypatch.setattr(bootstrap, 'Popen', mock)
     monkeypatch.setattr(bootstrap, 'venv', Mock())
 
     with pytest.raises(SystemExit) as excinfo:
@@ -74,7 +75,7 @@ def test_downloads_files(tmp_empty, monkeypatch, path, expected_file,
     assert excinfo.value.code == 0
     assert Path(expected_file).is_file()
 
-    install = mock_subprocess.Popen.call_args_list[-1][0][0]
+    install = mock.call_args_list[2][0][0]
     i = install.index('install')
     installed = install[i + 1:]
     assert set(installed) == expected_installed
