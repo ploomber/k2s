@@ -2,6 +2,7 @@
 
 ## 0.1.3dev
 - Parsing `%load_ext {pkg_name}`
+- Showing progress when installing packages
 
 ## 0.1.2 (2022-08-30)
 - Parsing string literals in notebooks and downloading them if they exist

@@ -8,6 +8,11 @@ from k2s.cli import CLI
 from k2s import bootstrap
 
 
+def is_installed(env_name, package):
+    return len(list(
+        Path(env_name).glob(f'lib/*/site-packages/{package}'))) == 1
+
+
 def test_bootstrap(tmp_empty, monkeypatch):
     monkeypatch.setattr(
         sys,
@@ -26,16 +31,18 @@ def test_bootstrap(tmp_empty, monkeypatch):
         if Path(args[0][0]).name not in {'jupyter-lab', 'jupyter-lab.exe'}:
             subprocess.run(*args, **kwargs)
 
-    mock = Mock()
-    mock.run = mock_run
-
-    monkeypatch.setattr(bootstrap, 'subprocess', mock)
+    monkeypatch.setattr(bootstrap, 'subprocess_run', mock_run)
 
     with pytest.raises(SystemExit) as excinfo:
         CLI()
 
     assert Path(cmds[-1][0][0]).name.startswith('jupyter-lab')
     assert excinfo.value.code == 0
+
+    # ensure packages are installed
+    assert is_installed('nb-env', 'matplotlib')
+    assert is_installed('nb-env', 'sklearn')
+    assert is_installed('nb-env', 'seaborn')
 
 
 @pytest.mark.parametrize('path, expected_file, expected_installed', [
@@ -55,6 +62,9 @@ def test_downloads_files(tmp_empty, monkeypatch, path, expected_file,
     )
 
     mock_subprocess = Mock()
+    mock_subprocess.Popen().stdout.readline.return_value = b''
+    mock_subprocess.Popen().poll.return_value = 0
+
     monkeypatch.setattr(bootstrap, 'subprocess', mock_subprocess)
     monkeypatch.setattr(bootstrap, 'venv', Mock())
 
@@ -64,9 +74,9 @@ def test_downloads_files(tmp_empty, monkeypatch, path, expected_file,
     assert excinfo.value.code == 0
     assert Path(expected_file).is_file()
 
-    install = mock_subprocess.run.call_args_list[1][0][0]
+    install = mock_subprocess.Popen.call_args_list[-1][0][0]
     i = install.index('install')
-    installed = install[i + 1:-1]
+    installed = install[i + 1:]
     assert set(installed) == expected_installed
 
 

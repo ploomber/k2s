@@ -4,7 +4,7 @@ pip install k2s --upgrade && k2s get ploomber/jupysql/doc/nb.ipynb
 import os
 import json
 from pathlib import Path, PurePosixPath
-import subprocess
+from subprocess import Popen, PIPE, run as subprocess_run
 import venv
 import urllib.request
 
@@ -14,9 +14,7 @@ from k2s.exceptions import CLIError
 
 
 def _run_command(cmd):
-    process = subprocess.Popen(cmd,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    process = Popen(cmd, stdout=PIPE, stderr=PIPE)
 
     last_length = 0
 
@@ -86,7 +84,7 @@ def from_file(file, url=None):
 
     path_to_python = path_to_bin(env_name, 'python')
 
-    subprocess.run(
+    subprocess_run(
         [path_to_python, '-m', 'pip', 'install', 'pip', '--upgrade'],
         check=True,
         capture_output=True)
@@ -103,7 +101,7 @@ def from_file(file, url=None):
     print('To exit: CTRL + C')
 
     try:
-        subprocess.run([path_to_jupyterlab, file],
+        subprocess_run([path_to_jupyterlab, file],
                        check=True,
                        capture_output=True)
     except KeyboardInterrupt:
