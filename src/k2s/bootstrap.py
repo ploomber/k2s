@@ -67,7 +67,7 @@ def from_file(file, url=None):
         nb['metadata'] = {}
 
     if not nb['metadata'].get('kernelspec'):
-        print('Notebook is missing kernel informatio, assuming Python...')
+        print('Notebook is missing kernel information, assuming Python...')
         nb['metadata']['kernelspec'] = {
             "display_name": "Python 3 (ipykernel)",
             "language": "python",

@@ -1,8 +1,9 @@
 # CHANGELOG
 
-## 0.1.3dev
+## 0.1.3 (2022-08-30)
 - Parsing `%load_ext {pkg_name}`
 - Showing progress when installing packages
+- Adding `metadata.kernelspec` info to notebook if missing
 
 ## 0.1.2 (2022-08-30)
 - Parsing string literals in notebooks and downloading them if they exist
