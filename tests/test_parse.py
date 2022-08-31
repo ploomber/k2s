@@ -12,16 +12,29 @@ from k2s import parse
 # TODO: test extract_imports returns no duplicates (it currently does)
 
 
-def test_extract_imports():
+@pytest.mark.parametrize('cells, expected', [
+    [
+        ["import pandas as pd", "import sklearn"],
+        ["pandas", "scikit-learn"],
+    ],
+    [
+        ["%load_ext autoreload\nx=1", "%load_ext memory_profiler"],
+        ["memory_profiler"],
+    ],
+    [
+        ["%load_ext autoreload", "%load_ext sql\nprint(42)"],
+        ["jupysql"],
+    ],
+    [
+        ["import pandas as pd", "import sklearn.tree"],
+        ["pandas", "scikit-learn"],
+    ],
+])
+def test_extract_imports_from_notebook(cells, expected):
     nb = nbformat.v4.new_notebook()
-    nb.cells = [
-        nbformat.v4.new_code_cell(source="import pandas as pd"),
-        nbformat.v4.new_code_cell(source="import sklearn"),
-    ]
+    nb.cells = [nbformat.v4.new_code_cell(source=source) for source in cells]
 
-    assert parse.extract_imports_from_notebook(nb) == [
-        'pandas', 'scikit-learn'
-    ]
+    assert parse.extract_imports_from_notebook(nb) == expected
 
 
 @pytest.mark.parametrize('source, expected', [

@@ -10,7 +10,15 @@ from urllib.error import HTTPError
 import parso
 from isort import place_module
 
+# https://ipython.readthedocs.io/en/stable/config/extensions/index.html
 from k2s.env import install
+
+_BUILT_IN_EXTENSIONS = {'autoreload', 'storemagic'}
+
+_PACKAGE_MAPPING = {
+    'sklearn': 'scikit-learn',
+    'sql': 'jupysql',
+}
 
 
 # FIXME: downloaded files might depend on other files, so we have to download
@@ -98,11 +106,6 @@ def packages_used(tree):
     Returns None if fails to parse them
     """
 
-    pkg_name = {
-        'sklearn': 'scikit-learn',
-        'sql': 'jupysql',
-    }
-
     def flatten(elements):
         return [i for sub in elements for i in sub]
 
@@ -136,9 +139,20 @@ def packages_used(tree):
 
     # replace using pkg_name mapping and ignore standard lib
     pkgs_final = [
-        pkg_name.get(name, name) for name in pkgs
+        _PACKAGE_MAPPING.get(name, name) for name in pkgs
         if place_module(name) == 'THIRDPARTY'
     ]
+
+    # parse magics
+    leaf = tree.get_first_leaf()
+
+    while leaf:
+        if leaf.value == '%' and leaf.get_next_leaf().value == 'load_ext':
+            ext_name = leaf.get_next_leaf().get_next_leaf().value
+            if ext_name not in _BUILT_IN_EXTENSIONS:
+                pkgs_final.append(_PACKAGE_MAPPING.get(ext_name, ext_name))
+
+        leaf = leaf.get_next_leaf()
 
     # remove duplicates and sort
     return sorted(set(pkgs_final))
