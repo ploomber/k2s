@@ -10,7 +10,7 @@ from k2s import bootstrap
 
 def is_installed(env_name, package):
     return len(list(
-        Path(env_name).glob(f'lib/*/site-packages/{package}'))) == 1
+        Path(env_name).glob(f'lib/**/site-packages/{package}'))) == 1
 
 
 def test_bootstrap(tmp_empty, monkeypatch):

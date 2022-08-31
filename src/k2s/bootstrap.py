@@ -54,6 +54,9 @@ def from_url(url):
 
     file = PurePosixPath(url).name
     urllib.request.urlretrieve(url, file)
+
+    # add kernel metadata, if needed
+
     return from_file(file, url=url)
 
 
