@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.1.4dev
+
 ## 0.1.3 (2022-08-30)
 - Parsing `%load_ext {pkg_name}`
 - Showing progress when installing packages
