@@ -6,7 +6,7 @@ import json
 from pathlib import Path, PurePosixPath
 from subprocess import Popen, PIPE, run as subprocess_run
 import venv
-import urllib.request
+from urllib.request import urlretrieve
 
 from k2s.parse import (extract_imports_from_notebook, download_files,
                        extract_code)
@@ -53,9 +53,7 @@ def from_url(url):
     url = f'https://raw.githubusercontent.com/{url}'
 
     file = PurePosixPath(url).name
-    urllib.request.urlretrieve(url, file)
-
-    # add kernel metadata, if needed
+    urlretrieve(url, file)
 
     return from_file(file, url=url)
 
@@ -65,12 +63,27 @@ def from_file(file, url=None):
 
     nb = json.loads(Path(file).read_text(encoding='utf-8'))
 
+    if 'metadata' not in nb:
+        nb['metadata'] = {}
+
+    if not nb['metadata'].get('kernelspec'):
+        print('Notebook is missing kernel informatio, assuming Python...')
+        nb['metadata']['kernelspec'] = {
+            "display_name": "Python 3 (ipykernel)",
+            "language": "python",
+            "name": "python3"
+        }
+
+        Path(file).write_text(json.dumps(nb), encoding='utf-8')
+
     deps = extract_imports_from_notebook(nb)
 
     # FIXME: we're runnign extract_code inside extract_imports already, we
     # should refactor
     if url:
         deps_extra = download_files(extract_code(nb), url)
+    else:
+        deps_extra = set()
 
     deps = list(set(deps) | deps_extra)
 

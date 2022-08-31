@@ -1,8 +1,10 @@
+import json
 from pathlib import Path
-import pytest
 from unittest.mock import Mock
 import subprocess
 import sys
+
+import pytest
 
 from k2s.cli import CLI
 from k2s import bootstrap
@@ -79,6 +81,48 @@ def test_downloads_files(tmp_empty, monkeypatch, path, expected_file,
     i = install.index('install')
     installed = install[i + 1:]
     assert set(installed) == expected_installed
+
+
+@pytest.mark.parametrize('nb', [
+    {
+        "cells": [],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5
+    },
+    {
+        "cells": [],
+        "metadata": {
+            "kernelspec": {}
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5
+    },
+],
+                         ids=[
+                             'metadata-empty',
+                             'kernelspec-empty',
+                         ])
+def test_adds_kernelspec(tmp_empty, nb, monkeypatch):
+    mock = Mock()
+    mock().stdout.readline.return_value = b''
+    mock().poll.return_value = 0
+
+    monkeypatch.setattr(bootstrap, 'subprocess_run', Mock())
+    monkeypatch.setattr(bootstrap, 'Popen', mock)
+    monkeypatch.setattr(bootstrap, 'venv', Mock())
+
+    Path("nb.ipynb").write_text(json.dumps(nb), encoding='utf-8')
+
+    bootstrap.from_file('nb.ipynb')
+
+    nb_loaded = json.loads(Path("nb.ipynb").read_text())
+
+    assert nb_loaded['metadata']['kernelspec'] == {
+        'display_name': 'Python 3 (ipykernel)',
+        'language': 'python',
+        'name': 'python3'
+    }
 
 
 # TODO: test that imports are extracted from imports *and* plain text
