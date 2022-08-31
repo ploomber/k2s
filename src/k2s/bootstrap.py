@@ -10,6 +10,35 @@ import urllib.request
 
 from k2s.parse import (extract_imports_from_notebook, download_files,
                        extract_code)
+from k2s.exceptions import CLIError
+
+
+def _run_command(cmd):
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+    last_length = 0
+
+    while True:
+        output = process.stdout.readline().decode()
+
+        if output == '' and process.poll() is not None:
+            break
+
+        if output:
+            line = output.strip()
+            print(' ' * last_length, end='\r')
+            print(line, end='\r')
+            last_length = len(line)
+
+    print(' ' * last_length, end='\r')
+    print()
+
+    return_code = process.poll()
+
+    if return_code:
+        raise CLIError(process.stderr.read().decode())
 
 
 def path_to_bin(env_name, bin):
@@ -62,10 +91,7 @@ def from_file(file, url=None):
         check=True,
         capture_output=True)
 
-    subprocess.run([path_to_python, '-m', 'pip', 'install', 'jupyterlab'] +
-                   deps + ['--quiet'],
-                   check=True,
-                   capture_output=False)
+    _run_command([path_to_python, '-m', 'pip', 'install', 'jupyterlab'] + deps)
 
     print("Lauching Jupyter...")
 

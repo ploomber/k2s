@@ -2,6 +2,7 @@ import sys
 import argparse
 
 from k2s.bootstrap import from_url
+from k2s.exceptions import CLIError
 
 
 class CLI:
@@ -15,7 +16,12 @@ class CLI:
             sys.exit(f'Unrecognized command {args.command!r}')
         else:
             cmd = getattr(self, args.command)
-            cmd()
+
+            try:
+                cmd()
+            except CLIError as e:
+                sys.exit(e)
+
             sys.exit(0)
 
     def get(self):
