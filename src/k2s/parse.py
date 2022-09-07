@@ -1,7 +1,6 @@
 import json
 import ast
 import re
-import sys
 from pathlib import Path, PurePosixPath
 import urllib.request
 from urllib.parse import urlsplit, urlunsplit
@@ -204,14 +203,16 @@ def extract_imports_from_notebook(nb):
     return packages_used(parso.parse(code)) + extract_from_plain_text(plain)
 
 
-def bootstrap_env(path_to_notebook, inline=False, verbose=False):
+def bootstrap_env(path_to_notebook, name=None, verbose=False):
+    # TODO: maybe print "remember to click on save?" - if users edit the
+    # notebook but do not save, we won't see their changes
     import nbformat
 
-    # if inline, install in the current environment
-    if inline:
-        name = Path(sys.prefix).name
-    else:
+    # TODO: add support for installing in the current environment, there are
+    # some challenges here, since we might break the installation
+    if name is None:
         name = Path(path_to_notebook).stem
+        print(f"name not suplied, will create env with name: {name}")
 
     print('Parsing notebook...')
     nb = nbformat.read(path_to_notebook, as_version=nbformat.NO_CONVERT)
@@ -220,25 +221,23 @@ def bootstrap_env(path_to_notebook, inline=False, verbose=False):
     cd = ChannelData()
     conda, pip = cd.pkg_exists(imports)
 
-    print(f'Found: {", ".join(imports)}. Installing...')
-    print(f'conda: {", ".join(conda)}')
-    print(f'pip: {", ".join(pip)}')
+    print(f'Found: {", ".join(imports)}')
 
-    install(name, conda, requirements_pip=pip, verbose=verbose, inline=inline)
+    install(name, conda, requirements_pip=pip, verbose=verbose)
 
     # if installed in a new env, we need to refresh jupyter for the new kernel
     # to appear
-    if not inline:
-        print('Kernel is ready! Refresh your browser and switch '
-              f'the kernel to: {name}')
+    # TODO: only say "switch" to if on a different kernel
+    print('Kernel is ready! Refresh your browser and switch '
+          f'the kernel to: {name}')
 
-        nb.metadata.kernelspec = {
-            'display_name': f'Python 3 ({name})',
-            'language': 'python',
-            'name': name,
-        }
+    nb.metadata.kernelspec = {
+        'display_name': f'Python 3 ({name})',
+        'language': 'python',
+        'name': name,
+    }
 
-        # override kernel spec - note that refreshing won't switch to this
-        # kernel and it'll stick with the original one until we kill the
-        # existing kernel
-        Path(path_to_notebook).write_text(nbformat.v4.writes(nb))
+    # override kernel spec - note that refreshing won't switch to this
+    # kernel and it'll stick with the original one until we kill the
+    # existing kernel
+    Path(path_to_notebook).write_text(nbformat.v4.writes(nb))

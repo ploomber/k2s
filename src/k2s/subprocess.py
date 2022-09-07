@@ -21,9 +21,10 @@ def _run_command(cmd):
             last_length = len(line)
 
     print(' ' * last_length, end='\r')
-    print()
 
     return_code = process.poll()
 
+    # TODO: community link
     if return_code:
+        print(f"ERRROR: {process.stderr.read().decode()}\n\n---")
         raise CLIError(process.stderr.read().decode())

@@ -7,7 +7,7 @@ import sys
 import pytest
 
 from k2s.cli import CLI
-from k2s import bootstrap
+from k2s import bootstrap, subprocess as k2s_subprocess
 
 
 def is_installed(env_name, package):
@@ -68,8 +68,8 @@ def test_downloads_files(tmp_empty, monkeypatch, path, expected_file,
     mock().poll.return_value = 0
 
     monkeypatch.setattr(bootstrap, 'subprocess_run', Mock())
-    monkeypatch.setattr(bootstrap, 'Popen', mock)
     monkeypatch.setattr(bootstrap, 'venv', Mock())
+    monkeypatch.setattr(k2s_subprocess, 'Popen', mock)
 
     with pytest.raises(SystemExit) as excinfo:
         CLI()
@@ -109,8 +109,8 @@ def test_adds_kernelspec(tmp_empty, nb, monkeypatch):
     mock().poll.return_value = 0
 
     monkeypatch.setattr(bootstrap, 'subprocess_run', Mock())
-    monkeypatch.setattr(bootstrap, 'Popen', mock)
     monkeypatch.setattr(bootstrap, 'venv', Mock())
+    monkeypatch.setattr(k2s_subprocess, 'Popen', mock)
 
     Path("nb.ipynb").write_text(json.dumps(nb), encoding='utf-8')
 
