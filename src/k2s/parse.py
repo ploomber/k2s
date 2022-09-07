@@ -206,6 +206,7 @@ def extract_imports_from_notebook(nb):
 def bootstrap_env(path_to_notebook, inline=False, verbose=False):
     import nbformat
 
+    # if inline, install in the current environment
     if inline:
         name = Path(sys.prefix).name
     else:
@@ -220,16 +221,18 @@ def bootstrap_env(path_to_notebook, inline=False, verbose=False):
 
     install(name, imports, verbose=verbose, inline=inline)
 
+    # if installed in a new env, we need to refresh jupyter for the new kernel
+    # to appear
     if not inline:
-        print('Kernel is ready! Refresh your browser')
+        print('Kernel is ready! Refresh your browser and switch the kernel')
 
-    nb.metadata.kernelspec = {
-        'display_name': f'Python 3 ({name})',
-        'language': 'python',
-        'name': name,
-    }
+        nb.metadata.kernelspec = {
+            'display_name': f'Python 3 ({name})',
+            'language': 'python',
+            'name': name,
+        }
 
-    # override kernel spec - note that refreshing won't switch to this
-    # kernel and it'll stick with the original one until we kill the existing
-    # kernel
-    Path(path_to_notebook).write_text(nbformat.v4.writes(nb))
+        # override kernel spec - note that refreshing won't switch to this
+        # kernel and it'll stick with the original one until we kill the
+        # existing kernel
+        Path(path_to_notebook).write_text(nbformat.v4.writes(nb))

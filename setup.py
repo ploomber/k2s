@@ -18,7 +18,7 @@ REQUIRES = [
     'isort',
 ]
 
-OPTIONAL = [
+NOTEBOOK = [
     'nbformat',
 ]
 
@@ -49,8 +49,8 @@ setup(
     keywords=[],
     install_requires=REQUIRES,
     extras_require={
-        'dev': DEV + OPTIONAL,
-        'optional': OPTIONAL,
+        'dev': DEV + NOTEBOOK,
+        'nb': NOTEBOOK,
     },
     entry_points={
         'console_scripts': ['k2s=k2s.cli:CLI'],
