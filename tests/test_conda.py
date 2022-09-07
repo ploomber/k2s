@@ -1,10 +1,13 @@
 import subprocess
 import shutil
 from pathlib import Path
+import sys
 
+import pytest
 from k2s.conda import CondaManager
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="not supported")
 def test_install_local():
     target = Path('~', '.k2s', 'conda').expanduser()
 
