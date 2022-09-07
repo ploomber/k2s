@@ -12,6 +12,7 @@ from isort import place_module
 
 # https://ipython.readthedocs.io/en/stable/config/extensions/index.html
 from k2s.env import install
+from k2s.index import ChannelData
 
 _BUILT_IN_EXTENSIONS = {'autoreload', 'storemagic'}
 
@@ -214,17 +215,22 @@ def bootstrap_env(path_to_notebook, inline=False, verbose=False):
 
     print('Parsing notebook...')
     nb = nbformat.read(path_to_notebook, as_version=nbformat.NO_CONVERT)
-    imports = extract_imports_from_notebook(nb)
-    imports = set(imports) - {'k2s'}
-    imports_str = ', '.join(imports)
-    print(f'Found: {imports_str}. Installing...')
+    imports = set(extract_imports_from_notebook(nb)) | {'k2s'}
 
-    install(name, imports, verbose=verbose, inline=inline)
+    cd = ChannelData()
+    conda, pip = cd.pkg_exists(imports)
+
+    print(f'Found: {", ".join(imports)}. Installing...')
+    print(f'conda: {", ".join(conda)}')
+    print(f'pip: {", ".join(pip)}')
+
+    install(name, conda, requirements_pip=pip, verbose=verbose, inline=inline)
 
     # if installed in a new env, we need to refresh jupyter for the new kernel
     # to appear
     if not inline:
-        print('Kernel is ready! Refresh your browser and switch the kernel')
+        print('Kernel is ready! Refresh your browser and switch '
+              f'the kernel to: {name}')
 
         nb.metadata.kernelspec = {
             'display_name': f'Python 3 ({name})',
