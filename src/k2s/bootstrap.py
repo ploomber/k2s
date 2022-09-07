@@ -4,39 +4,14 @@ pip install k2s --upgrade && k2s get ploomber/jupysql/doc/nb.ipynb
 import os
 import json
 from pathlib import Path, PurePosixPath
-from subprocess import Popen, PIPE, run as subprocess_run
+from subprocess import run as subprocess_run
 import venv
 from urllib.request import urlretrieve
 
 from k2s.parse import (extract_imports_from_notebook, download_files,
                        extract_code)
-from k2s.exceptions import CLIError
 
-
-def _run_command(cmd):
-    process = Popen(cmd, stdout=PIPE, stderr=PIPE)
-
-    last_length = 0
-
-    while True:
-        output = process.stdout.readline().decode()
-
-        if output == '' and process.poll() is not None:
-            break
-
-        if output:
-            line = output.strip()
-            print(' ' * last_length, end='\r')
-            print(line, end='\r')
-            last_length = len(line)
-
-    print(' ' * last_length, end='\r')
-    print()
-
-    return_code = process.poll()
-
-    if return_code:
-        raise CLIError(process.stderr.read().decode())
+from k2s.subprocess import _run_command
 
 
 def path_to_bin(env_name, bin):
