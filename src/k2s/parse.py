@@ -88,10 +88,20 @@ def local_files(source):
 
 
 def extract_from_plain_text(text):
-    matches = re.findall(r'pip install ([\w \-]+)', text)
+    # NOTE: +, :, /, and . are also required since users may have something
+    # like: pip install git+https://github.com/ploomber/ploomber
+    # we ignore those requirements but we need to parse them
+    matches = re.findall(r'pip install ([\w \-\+\:\/\.]+)', text)
+    matches
+
     deps = set([
         item for sublist in [match.split() for match in matches]
-        for item in sublist if not item.startswith('-')
+        for item in sublist
+        # ignore options passed to "pip install"
+        if not item.startswith('-')
+        # ignore git+URL and similar:
+        # https://pip.pypa.io/en/stable/topics/vcs-support/
+        if '+' not in item
     ])
     return list(deps - {'k2s'})
 

@@ -105,6 +105,14 @@ pip install pyarrow
 """,
         {'pyarrow'},
     ],
+    [
+        """
+```python
+pip install git+https://github.com/ploomber/ploomber duckdb
+```
+""",
+        {'duckdb'},
+    ],
 ],
                          ids=[
                              'simple',
@@ -112,6 +120,7 @@ pip install pyarrow
                              'single-dash-option',
                              'duplicates',
                              'ignores-itself',
+                             'ignores-git',
                          ])
 def test_extract_from_plain_text(tmp_empty, source, expected):
     nb = nbformat.v4.new_notebook()
