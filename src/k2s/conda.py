@@ -78,6 +78,27 @@ class CondaManager:
             print("Done installing mamba.")
 
     def create_env(self, name, requirements, requirements_pip):
+        """
+        Notes
+        -----
+        Theres a chance conda/mamba determine to re-install Python, example:
+
+        mamba create --name test python=3.8.13 -c defaults --yes
+        conda activate test
+        mamba install ploomber -c conda-forge --dry-run
+
+        This will crash the environment, so we must pin Python
+
+
+        Examples
+        --------
+        >>> from k2s.conda import CondaManager
+        >>> cm = CondaManager()
+        >>> cm.create_env("some-env", requirements=["python=3.8.13"],
+        ... requirements_pip=None)
+        >>> cm.create_env("some-env", requirements=["ploomber"],
+        ... requirements_pip=None)
+        """
         # TODO: if the env already exists, say "updating" instead of
         # "installing"
         print("Installing dependencies...")
@@ -98,6 +119,26 @@ class CondaManager:
             prefix = str(Path(self.get_active_prefix()))
         else:
             prefix = str(Path(self.get_base_prefix(), "envs", name))
+
+        # TODO: revert this change after executing the update?
+        # if the environment exists, we must pin Python
+        # should I pin ipykernel as well?
+        if Path(prefix).exists():
+            bin = str(Path(prefix, 'bin', 'python'))
+            cmd = ("from sys import version_info as v"
+                   "; print(f'{v.major}.{v.minor}.{v.micro}')")
+            out = subprocess.run([bin, "-c", cmd],
+                                 check=True,
+                                 capture_output=True)
+            version = out.stdout.decode().strip()
+            Path(prefix, "conda-meta").mkdir(exist_ok=True)
+            pinned_path = Path(prefix, "conda-meta", "pinned")
+            if pinned_path.exists():
+                pinned = pinned_path.read_text()
+            else:
+                pinned = ''
+
+            pinned_path.write_text(f'{pinned}\npython=={version}')
 
         cmd = [
             self.get_base_mamba_bin(),
@@ -129,6 +170,8 @@ class CondaManager:
         if self.install_conda:
             return str(Path('~', '.k2s', 'conda').expanduser())
         else:
+            # NOTE: is this the best way to retrieve this?
+            # maybe sys.prefix?
             return str(Path(shutil.which("conda")).parent.parent)
 
     def get_base_conda_bin(self):
@@ -148,4 +191,5 @@ class CondaManager:
     def prune():
         """Delete all environments and kernels
         """
+        # also delete local conda installation
         pass

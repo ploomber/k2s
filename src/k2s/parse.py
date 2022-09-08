@@ -208,11 +208,8 @@ def bootstrap_env(path_to_notebook, name=None, verbose=False):
     # notebook but do not save, we won't see their changes
     import nbformat
 
-    # TODO: add support for installing in the current environment, there are
-    # some challenges here, since we might break the installation
     if name is None:
-        name = Path(path_to_notebook).stem
-        print(f"name not suplied, will create env with name: {name}")
+        print("name not supplied, installing in the current environment...")
 
     print('Parsing notebook...')
     nb = nbformat.read(path_to_notebook, as_version=nbformat.NO_CONVERT)
@@ -228,8 +225,9 @@ def bootstrap_env(path_to_notebook, name=None, verbose=False):
     # if installed in a new env, we need to refresh jupyter for the new kernel
     # to appear
     # TODO: only say "switch" to if on a different kernel
-    print('Kernel is ready! Refresh your browser and switch '
-          f'the kernel to: {name}')
+    if name is not None:
+        print('Kernel is ready! Refresh your browser and switch '
+              f'the kernel to: {name}')
 
     nb.metadata.kernelspec = {
         'display_name': f'Python 3 ({name})',

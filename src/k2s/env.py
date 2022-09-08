@@ -4,14 +4,25 @@ import json
 from k2s.conda import CondaManager
 
 
-def _make_spec(path_to_python, name):
+def _make_spec(path_to_python, display_name):
+    """Create Jupyter kernel spec
+
+    Parameters
+    ----------
+    path_to_python : str
+        Path to bin/python in the target environment (the env must have
+        ipykernel installed)
+
+    display_name : str
+        Name displayed to the user
+    """
     return {
         "argv": [
             str(path_to_python), "-m", "ipykernel_launcher", "-f",
             "{connection_file}"
         ],
         "display_name":
-        f"Python 3 ({name})",
+        f"Python 3 ({display_name})",
         "language":
         "python",
         "metadata": {
@@ -41,7 +52,8 @@ def install(name=None,
 
         # folder where we'll register the kernel (in the prefix)
         # NOTE: I don't think this will work every time, we need to test with
-        # sagemaker, google cloud notebooks, etc.
+        # sagemaker, google cloud notebooks, etc. - probably better to
+        # install in the local kernels directory
         prefix = cm.get_active_prefix()
         path_to_kernels = Path(prefix, 'share', 'jupyter', 'kernels')
 
