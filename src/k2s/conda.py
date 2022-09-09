@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 import urllib.request
 import subprocess
+from os import environ
 
 from k2s.subprocess import _run_command
 
@@ -14,6 +15,10 @@ URLS = {
     'darwin':
     "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh",
 }
+
+
+def _is_kaggle():
+    return "KAGGLE_DOCKER_IMAGE" in environ
 
 
 def _get_conda_url():
@@ -181,12 +186,21 @@ class CondaManager:
         return str(Path(self.get_base_prefix(), "bin", "mamba"))
 
     def get_active_prefix(self):
+        # kaggle returns an empty "active_prefix", we need to hardcode it
+        if _is_kaggle():
+            return "opt/conda"
+
         out = subprocess.run([self.get_base_conda_bin(), 'info', '--json'],
                              check=True,
                              capture_output=True)
-        # TODO: this will return none if in the base env (this happens in
-        # kaggle) - maybe is the conda version?
-        return json.loads(out.stdout.decode())['active_prefix']
+
+        active_prefix = json.loads(out.stdout.decode())['active_prefix']
+
+        if not active_prefix:
+            raise RuntimeError("Unable to determine current environment. "
+                               "For help: https://ploomber.io/community")
+
+        return active_prefix
 
     def prune():
         """Delete all environments and kernels
