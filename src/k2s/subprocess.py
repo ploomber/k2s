@@ -1,6 +1,10 @@
+import sys
+from os import environ
 from subprocess import Popen, PIPE
 
 from k2s.exceptions import CLIError
+
+DEBUG_MODE = bool(environ.get("K2S_DEBUG", False))
 
 
 def _run_command(cmd):
@@ -16,15 +20,22 @@ def _run_command(cmd):
 
         if output:
             line = output.strip()
-            print(' ' * last_length, end='\r')
-            print(line, end='\r')
+
+            if DEBUG_MODE:
+                print(line)
+            else:
+                sys.stdout.write('\r' + ' ' * last_length + '\r' + line)
+                sys.stdout.flush()
+
             last_length = len(line)
 
-    print(' ' * last_length, end='\r')
+    print('\n', end='')
 
     return_code = process.poll()
 
-    # TODO: community link
     if return_code:
-        print(f"ERRROR: {process.stderr.read().decode()}\n\n---")
-        raise CLIError(process.stderr.read().decode())
+        raise CLIError(
+            'An error happened:\n\n'
+            f'{process.stderr.read().decode()}\nFor help, share this error '
+            'in the #ask-anything channel in '
+            'our community: https://ploomber.io/community')

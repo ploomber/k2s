@@ -1,3 +1,4 @@
+import os
 import json
 import sys
 import shutil
@@ -7,27 +8,21 @@ import subprocess
 from os import environ
 
 from k2s.subprocess import _run_command
+from k2s.index import ChannelData
+from k2s.exceptions import KernelRestartRequired
+
+BASE_MINI = "https://repo.anaconda.com/miniconda"
 
 # https://docs.python.org/3/library/sys.html#sys.platform
 URLS = {
-    'linux':
-    "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh",
-    'darwin':
-    "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh",
+    'linux': f"{BASE_MINI}/Miniconda3-latest-Linux-x86_64.sh",
+    'darwin': f"{BASE_MINI}/Miniconda3-latest-MacOSX-x86_64.sh",
 }
 
+MINI_3_7 = (f"{BASE_MINI}/Miniconda3-py37_4.12.0-Linux-x86_64.sh")
 
-def _is_kaggle():
-    return "KAGGLE_DOCKER_IMAGE" in environ
-
-
-def _get_conda_url():
-    url = URLS.get(sys.platform)
-
-    if url is None:
-        raise RuntimeError("Only Linux and Mac are supported")
-
-    return url
+IS_KAGGLE = "KAGGLE_DOCKER_IMAGE" in environ
+IS_COLAB = "COLAB_GPU" in environ
 
 
 class CondaManager:
@@ -41,33 +36,49 @@ class CondaManager:
     """
 
     def __init__(self, install_conda=True) -> None:
+        self.pre_setup()
+
         self.install_conda = install_conda
 
         if not shutil.which("conda") and not install_conda:
             raise RuntimeError("conda is not installed, to install it "
                                "pass install_conda=True")
 
-        has_local_conda = (self.get_home() / 'conda').is_dir()
+        has_local_conda = (self.get_config_directory() / 'conda').is_dir()
 
         if (not shutil.which('conda')
                 or install_conda) and not has_local_conda:
-            self.install_local()
+            home = self.get_config_directory()
+            self.install_conda_in_prefix(str(home / 'conda'))
 
         # ensure mamba is installed in the base prefix
-        self.install_mamba()
+        prefix = self.get_base_prefix()
+        self.install_mamba_in_prefix(prefix)
+        self.post_conda_install()
 
-    def install_local(self):
-        """Installs miniconda in ~/.k2s/conda
+    def pre_setup(self):
+        pass
+
+    def post_conda_install(self):
+        pass
+
+    def _get_conda_url(self):
+        url = URLS.get(sys.platform)
+
+        if url is None:
+            raise RuntimeError("Only Linux and Mac are supported")
+
+        return url
+
+    def install_conda_in_prefix(self, prefix):
+        """Installs miniconda in the given prefix
         """
-        print("Installing conda (only needed once)...")
-        home = self.get_home()
-        urllib.request.urlretrieve(_get_conda_url(), "miniconda.sh")
-        _run_command(["bash", "miniconda.sh", "-b", "-p", str(home / 'conda')])
+        print(f"Installing conda ({prefix!r})...")
+        urllib.request.urlretrieve(self._get_conda_url(), "miniconda.sh")
+        _run_command(["bash", "miniconda.sh", "-b", "-f", "-p", prefix])
         print("Finished installing conda.")
 
-    def install_mamba(self):
-        prefix = self.get_base_prefix()
-
+    def install_mamba_in_prefix(self, prefix):
         if not Path(prefix, "bin", "mamba").exists():
             print("Installing mamba...")
             _run_command([
@@ -78,9 +89,11 @@ class CondaManager:
                 "conda-forge",
                 "-y",
                 "--prefix",
-                self.get_base_prefix(),
+                prefix,
             ])
             print("Done installing mamba.")
+        else:
+            print("mamba already installed...")
 
     def create_env(self, name, requirements, requirements_pip):
         """
@@ -106,12 +119,14 @@ class CondaManager:
         """
         # TODO: if the env already exists, say "updating" instead of
         # "installing"
-        print("Installing dependencies...")
+        print(
+            "Installing dependencies, this might take a few minutes. "
+            "Join our community while you wait: https://ploomber.io/community")
 
         spec = {
             "name":
             name,
-            "channels": ["conda-forge"],
+            "channels": ["conda-forge", "default"],
             "dependencies":
             list(requirements) +
             ["pip", "ipykernel", "python",
@@ -154,8 +169,9 @@ class CondaManager:
             "--prefix",
             prefix,
             # NOTE: --prune is broken since conda 4.4
-            # https://github.com/conda/conda/issues/7279
-            "--prune",
+            # https://github.com/conda/conda/issues/7279,
+            # it doesn't do anything and we noticed it sometimes
+            # breaks stuff
         ]
 
         _run_command(cmd)
@@ -164,7 +180,9 @@ class CondaManager:
 
         return prefix
 
-    def get_home(self):
+    def get_config_directory(self):
+        """Returns the directory to store k2s configuration
+        """
         home = Path('~', '.k2s').expanduser()
         home.mkdir(exist_ok=True)
         return home
@@ -173,7 +191,7 @@ class CondaManager:
         """Get base conda base prefix to use for all commands
         """
         if self.install_conda:
-            return str(Path('~', '.k2s', 'conda').expanduser())
+            return str(self.get_config_directory() / 'conda')
         else:
             # NOTE: is this the best way to retrieve this?
             # maybe sys.prefix?
@@ -186,9 +204,6 @@ class CondaManager:
         return str(Path(self.get_base_prefix(), "bin", "mamba"))
 
     def get_active_prefix(self):
-        # kaggle returns an empty "active_prefix", we need to hardcode it
-        if _is_kaggle():
-            return "opt/conda"
 
         out = subprocess.run([self.get_base_conda_bin(), 'info', '--json'],
                              check=True,
@@ -207,3 +222,81 @@ class CondaManager:
         """
         # also delete local conda installation
         pass
+
+
+class ColabCondaManager(CondaManager):
+
+    def __init__(self, install_conda=True) -> None:
+        self.pre_setup()
+
+        if shutil.which("conda"):
+            print("conda already installed...")
+        else:
+            self.install_conda_in_prefix(self.get_active_prefix())
+            self.install_mamba_in_prefix(self.get_active_prefix())
+            self.post_conda_install()
+
+    def pre_setup(self):
+        if not IS_COLAB:
+            raise RuntimeError(
+                f"{type(self).__name__} should only be used in Colab")
+
+        # this is not added by default on Colab
+        sys.path.insert(
+            0, f"{self.get_active_prefix()}/lib/python3.7/site-packages")
+
+    def post_conda_install(self):
+        os.rename(sys.executable, f"{sys.executable}.colab")
+        LD_LIBRARY_PATH = (f"{self.get_active_prefix()}/lib"
+                           f":{os.environ.get('LD_LIBRARY_PATH', '')}")
+
+        Path(sys.executable).write_text(f"""\
+#!/bin/bash
+export LD_LIBRARY_PATH={LD_LIBRARY_PATH}
+{sys.executable}.colab -x $@
+""")
+
+        subprocess.run(["chmod", "+x", sys.executable], check=True)
+
+        from IPython import get_ipython
+        get_ipython().kernel.do_shutdown(restart=True)
+        raise KernelRestartRequired
+
+    def get_base_prefix(self):
+        return "/usr/local"
+
+    def get_active_prefix(self):
+        return self.get_base_prefix()
+
+    def _get_conda_url(self):
+        return MINI_3_7
+
+
+class KaggleCondaManager(CondaManager):
+
+    def pre_setup(self):
+        if not IS_KAGGLE:
+            raise RuntimeError(
+                f"{type(self).__name__} should only be used in Kaggle")
+
+    def get_base_prefix(self):
+        return "/opt/conda"
+
+    def get_active_prefix(self):
+        return self.get_base_prefix()
+
+
+def install(requirements):
+    """Install packages
+    """
+    if IS_COLAB:
+        class_ = ColabCondaManager
+    elif IS_KAGGLE:
+        class_ = KaggleCondaManager
+    else:
+        class_ = CondaManager
+
+    cm = class_()
+    cd = ChannelData()
+    conda, pip = cd.pkg_exists(requirements)
+    cm.create_env(name=None, requirements=conda, requirements_pip=pip)

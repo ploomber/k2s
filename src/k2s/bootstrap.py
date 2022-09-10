@@ -82,7 +82,7 @@ def from_file(file, url=None):
 
     _run_command([path_to_python, '-m', 'pip', 'install', 'jupyterlab'] + deps)
 
-    print("Lauching Jupyter...")
+    print("Lauching Jupyter... (this might take a few seconds)")
 
     # TODO: if jupyter lab is already installed, we can use it (and skip
     # installation), but we have to make sure that the kernel used is
