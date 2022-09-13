@@ -1,7 +1,8 @@
 # CHANGELOG
 
-## 0.1.5dev
+## 0.1.5 (2022-09-13)
 - Adds anonymous telemetry
+- Caching `install` when using Colab
 ## 0.1.4 (2022-09-13)
 - Adds support for Google Colab
 
