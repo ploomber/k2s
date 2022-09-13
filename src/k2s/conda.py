@@ -8,6 +8,7 @@ import subprocess
 from os import environ
 
 from ploomber_core.telemetry.telemetry import Telemetry
+from ploomber_core.config import Config
 
 from k2s.subprocess import _run_command
 from k2s.index import ChannelData
@@ -237,6 +238,17 @@ class CondaManager:
         pass
 
 
+class ColabConfig(Config):
+    install_requirements_argument: list = None
+
+    def path(cls):
+        # remove this once this is closed:
+        # https://github.com/ploomber/core/issues/16
+        path_to_cfg = Path('~/.k2s/colab/config.yaml').expanduser()
+        path_to_cfg.parent.mkdir(exist_ok=True, parents=True)
+        return path_to_cfg
+
+
 class ColabCondaManager(CondaManager):
 
     def __init__(self, install_conda=True) -> None:
@@ -303,7 +315,18 @@ class KaggleCondaManager(CondaManager):
 def install(requirements):
     """Install packages
     """
+    cfg = None
+
     if IS_COLAB:
+        cfg = ColabConfig()
+
+        if requirements == cfg.install_requirements_argument:
+            print('Packages already installed...')
+            # instantiate the manager since it'll configure the path for
+            # Colab to work
+            ColabCondaManager()
+            return
+
         class_ = ColabCondaManager
     elif IS_KAGGLE:
         class_ = KaggleCondaManager
@@ -314,3 +337,6 @@ def install(requirements):
     cd = ChannelData()
     conda, pip = cd.pkg_exists(requirements)
     cm.create_env(name=None, requirements=conda, requirements_pip=pip)
+
+    if IS_COLAB:
+        cfg.install_requirements_argument = list(requirements)
