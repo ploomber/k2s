@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.1.4dev
+- Adds support for Google Colab
 
 ## 0.1.3 (2022-08-30)
 - Parsing `%load_ext {pkg_name}`

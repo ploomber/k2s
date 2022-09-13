@@ -7,6 +7,10 @@ A tool to bootstrap Python environments and Jupyter kernels.
 ```sh
 pip install k2s
 ```
+
+## Usage: Google Colab
+
+`k2s` can install `conda` on Colab: [see this example.](https://colab.research.google.com/drive/1pPhAQpAhJcsiIDmsP1g8mSjZvU1d7VAg)
 ## Usage: Get GitHub notebook
 
 To download a notebook, bootstrap a virtual environment, and start Jupyter:
