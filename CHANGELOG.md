@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.1.6dev
+
 ## 0.1.5 (2022-09-13)
 - Adds anonymous telemetry
 - Caching `install` when using Colab
