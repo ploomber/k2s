@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.1.4dev
+## 0.1.4 (2022-09-13)
 - Adds support for Google Colab
 
 ## 0.1.3 (2022-08-30)
