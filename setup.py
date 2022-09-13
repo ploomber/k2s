@@ -16,6 +16,8 @@ with open('src/k2s/__init__.py', 'rb') as f:
 REQUIRES = [
     'parso',
     'isort',
+    'ploomber-core',
+    'importlib-metadata;python_version<"3.8"',
 ]
 
 NOTEBOOK = [

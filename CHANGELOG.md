@@ -1,7 +1,7 @@
 # CHANGELOG
 
 ## 0.1.5dev
-
+- Adds anonymous telemetry
 ## 0.1.4 (2022-09-13)
 - Adds support for Google Colab
 

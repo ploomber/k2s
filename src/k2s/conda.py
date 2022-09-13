@@ -7,9 +7,16 @@ import urllib.request
 import subprocess
 from os import environ
 
+from ploomber_core.telemetry.telemetry import Telemetry
+
 from k2s.subprocess import _run_command
 from k2s.index import ChannelData
 from k2s.exceptions import KernelRestartRequired
+
+try:
+    from importlib.metadata import version
+except ModuleNotFoundError:
+    from importlib_metadata import version
 
 BASE_MINI = "https://repo.anaconda.com/miniconda"
 
@@ -23,6 +30,12 @@ MINI_3_7 = (f"{BASE_MINI}/Miniconda3-py37_4.12.0-Linux-x86_64.sh")
 
 IS_KAGGLE = "KAGGLE_DOCKER_IMAGE" in environ
 IS_COLAB = "COLAB_GPU" in environ
+
+telemetry = Telemetry(
+    api_key="phc_P9SpSeypyPwxrMdFn2edOOEooQioF2axppyEeDwtMSP",
+    package_name="k2s",
+    version=version("k2s"),
+)
 
 
 class CondaManager:
@@ -286,6 +299,7 @@ class KaggleCondaManager(CondaManager):
         return self.get_base_prefix()
 
 
+@telemetry.log_call('k2s-install')
 def install(requirements):
     """Install packages
     """
