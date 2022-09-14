@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.1.6dev
+- Shows spinner when running long processes
 
 ## 0.1.5 (2022-09-13)
 - Adds anonymous telemetry

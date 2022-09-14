@@ -1,6 +1,7 @@
 """
 pip install k2s --upgrade && k2s get ploomber/jupysql/doc/nb.ipynb
 """
+import shutil
 import os
 import json
 from pathlib import Path, PurePosixPath
@@ -66,6 +67,11 @@ def from_file(file, url=None):
     print(f"Installing: {', '.join(deps)}")
     print("This may take a moment. "
           "Join our community while you wait: https://ploomber.io/community")
+
+    # if the user stopped the process in the middle and tried again, the env
+    # might exist but will be corrupted, so we must clean it
+    if Path(env_name).exists():
+        shutil.rmtree(env_name)
 
     # maybe site-packages, yes? will that copy the existing ones? perhaps
     # they already ahve most of the dependencies and we can save time.
