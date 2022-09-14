@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.1.7dev
+
 ## 0.1.6 (2022-09-13)
 - Shows spinner when running long processes
 
