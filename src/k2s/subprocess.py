@@ -3,6 +3,7 @@ from os import environ
 from subprocess import Popen, PIPE
 
 from k2s.exceptions import CLIError
+from k2s.spinner import Spinner
 
 DEBUG_MODE = bool(environ.get("K2S_DEBUG", False))
 
@@ -12,22 +13,25 @@ def _run_command(cmd):
 
     last_length = 0
 
-    while True:
-        output = process.stdout.readline().decode()
+    with Spinner():
+        while True:
+            # TODO: this wont work if the output is larger than the terminal
+            # size
+            output = process.stdout.readline().decode()
 
-        if output == '' and process.poll() is not None:
-            break
+            if output == '' and process.poll() is not None:
+                break
 
-        if output:
-            line = output.strip()
+            if output:
+                line = output.strip() + '  '
 
-            if DEBUG_MODE:
-                print(line)
-            else:
-                sys.stdout.write('\r' + ' ' * last_length + '\r' + line)
-                sys.stdout.flush()
-
-            last_length = len(line)
+                if DEBUG_MODE:
+                    print(line)
+                else:
+                    out = ('\r' + ' ' * last_length + '\r' + line)
+                    sys.stdout.write(out)
+                    sys.stdout.flush()
+                    last_length = len(line)
 
     print('\n', end='')
 
