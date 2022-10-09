@@ -224,6 +224,52 @@ def test_local_files(source, expected):
     assert parse.local_files(source) == expected
 
 
+@pytest.mark.parametrize('source, expected', [
+    ['x=1', set()],
+    ['some_variable="some-variable"', set()],
+    ['pd.read_csv("something.csv")', {'something.csv'}],
+    ['"path/to/file.txt"', {'path/to/file.txt'}],
+    ['"/path/to/file.txt"', {'/path/to/file.txt'}],
+    ['path="C:/path/to/file"', {'C:/path/to/file'}],
+    ['path="C:\\path\\to\\file"', {"C:\\path\\to\\file"}],
+    ['path="path\\to\\file"', {"path\\to\\file"}],
+    [
+        """
+import pandas as pd
+
+df = pd.read_csv('data.csv')
+
+another = pd.read_parquet('/path/to/parquet.parquet')
+""", {'data.csv', '/path/to/parquet.parquet'}
+    ],
+],
+                         ids=[
+                             'not-a-string',
+                             'not-a-path',
+                             'filename',
+                             'relative-path',
+                             'absolute-path',
+                             'absolute-path-windows',
+                             'absolute-path-windows-backslash',
+                             'relative-path-windows-backslash',
+                             'multiple',
+                         ])
+def test_paths(source, expected):
+    assert parse.paths(source) == expected
+
+
+def test_paths_raw():
+    assert parse.paths('"some/file.txt"', raw=True) == {'"some/file.txt"'}
+
+
+@pytest.mark.parametrize('source, expected, raw', [
+    ["'file.csv'", {'file.csv'}, False],
+    ["'file.csv'", {"'file.csv'"}, True],
+])
+def test_string_literals(source, expected, raw):
+    assert parse.string_literals(source, raw=raw) == expected
+
+
 def test_download_files(tmp_empty):
     source = """
 Path("with-files-something.txt")

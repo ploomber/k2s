@@ -1,7 +1,6 @@
 import json
-import ast
 import re
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import urllib.request
 from urllib.parse import urlsplit, urlunsplit
 from urllib.error import HTTPError
@@ -53,38 +52,113 @@ def download_files(source, url):
     return deps
 
 
+def _get_previous_leaf(leaf, *, levels):
+
+    for _ in range(levels):
+        leaf = leaf.get_previous_leaf()
+
+        if leaf is None:
+            return None
+
+    return leaf
+
+
 def local_files(source):
+    """
+    Given some source code, infer what files are used as inputs. For example,
+    calls to .read, .read_* functions, or calls to pathlib.Path
+    """
     # nbformat.read("notebook.ipynb") or jupytext.read("notebook.ipynb")
     # Path("file.txt")
     # pd.read_{fmt}("path.ext")
-    mod = parso.parse(source)
-
-    leaf = mod.get_first_leaf()
-
+    # look for calls to these functions
     targets = {'read', 'Path'}
 
     # TODO: ploomber-specific: pipeline.yaml (DAGSpec.find())
     # or ploomber build
 
-    paths = []
+    # TODO: ignore things like s3://
+
+    def evaluator(leaf):
+        is_string = leaf.type == 'string'
+
+        if not is_string:
+            return False
+
+        prev = leaf.get_previous_leaf()
+
+        if prev.type == 'operator' and prev.value == '=':
+            prev = _get_previous_leaf(leaf, levels=4)
+        else:
+            prev = _get_previous_leaf(leaf, levels=2)
+
+        if prev is None:
+            return is_string
+
+        return prev.value in targets or (prev.value.startswith('read_')
+                                         and prev.value != 'read_sql')
+
+    return string_literals(source, evaluator=evaluator)
+
+
+def paths(source, *, raw=False):
+    """
+    Given some source code, parse string literals that look like paths
+    """
+
+    def evaluator(leaf):
+        is_string = leaf.type == 'string'
+
+        if not is_string:
+            return False
+
+        value = leaf.value
+
+        constructor = (PureWindowsPath
+                       if ':' in value or '\\' in value else PurePosixPath)
+
+        path = constructor(value)
+
+        return len(path.parts) >= 2 or path.suffix
+
+    return string_literals(source, evaluator=evaluator, raw=raw)
+
+
+def string_literals(source, *, evaluator=None, raw=False):
+    """Find string literals in the source code
+
+    Parameters
+    ----------
+    source : str
+        Source code
+
+    evaluator : callable
+        A function that returns true if the leaf should be ocnsidered a
+        candidate or not
+    """
+    if evaluator is None:
+
+        def evaluator(leaf):
+            return leaf.type == 'string'
+
+    mod = parso.parse(source)
+
+    leaf = mod.get_first_leaf()
+
+    literals = []
 
     while leaf:
-        if leaf.value in targets or (leaf.value.startswith('read_')
-                                     and leaf.value != 'read_sql'):
-            arg = leaf.get_next_leaf().get_next_leaf()
+        if evaluator(leaf):
+            if raw:
+                value = leaf.value
+            else:
+                value = leaf.value[1:-1]
 
-            if arg.type == 'string':
-                paths.append(ast.literal_eval(arg.value))
-
-            # keyword arg
-            op = arg.get_next_leaf()
-
-            if op.type == 'operator' and op.value == '=':
-                paths.append(ast.literal_eval(op.get_next_leaf().value))
+            literals.append(value)
 
         leaf = leaf.get_next_leaf()
 
-    return set(paths)
+    return set(literals)
 
 
 def extract_from_plain_text(text):
