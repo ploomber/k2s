@@ -17,14 +17,18 @@ class ChannelData:
 
         target = home / "conda-forge.json"
 
-        urllib.request.urlretrieve(
-            "https://conda.anaconda.org/conda-forge/channeldata.json", target)
+        if not target.exists():
+            urllib.request.urlretrieve(
+                "https://conda.anaconda.org/conda-forge/channeldata.json",
+                target)
 
         data = json.loads(target.read_text())
 
         return data
 
     def pkg_exists(self, names):
+        """Check if the packages exist in conda-forge
+        """
         exist, not_exist = [], []
 
         for name in names:
