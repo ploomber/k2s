@@ -8,14 +8,13 @@ class ChannelData:
     """
 
     def __init__(self):
+        self._home = Path('~', '.k2s').expanduser()
         self._data = self.load_channel_data()
 
     def load_channel_data(self):
-        home = Path('~', '.k2s').expanduser()
-        if not home.exists():
-            home.mkdir()
+        self._home.mkdir(exist_ok=True, parents=True)
 
-        target = home / "conda-forge.json"
+        target = self._home / "conda-forge.json"
 
         if not target.exists():
             urllib.request.urlretrieve(
