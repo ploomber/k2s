@@ -31,7 +31,13 @@ class ChannelData:
         exist, not_exist = [], []
 
         for name in names:
-            if self._data['packages'].get(name):
+            name_sanitized = name if '=' not in name else name.split('=')[0]
+
+            if self._data['packages'].get(name_sanitized):
+                # conda uses = insted of pip's ==
+                if '==' in name:
+                    name = name.replace('==', '=')
+
                 exist.append(name)
             else:
                 not_exist.append(name)
