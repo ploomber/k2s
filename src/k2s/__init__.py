@@ -3,4 +3,4 @@ from k2s.conda import install
 
 __all__ = ["bootstrap_env", "install"]
 
-__version__ = '0.1.7b3'
+__version__ = '0.1.7dev'
