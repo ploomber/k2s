@@ -242,6 +242,21 @@ df = pd.read_csv('data.csv')
 another = pd.read_parquet('/path/to/parquet.parquet')
 """, {'data.csv', '/path/to/parquet.parquet'}
     ],
+    [
+        """
+import matplotlib as mpl
+mpl.rcParams['figure.figsize'] = (12, 8)
+""",
+        set()
+    ],
+    [
+        """
+from matplotlib import rcParams
+
+rcParams['axes.xmargin'] = 0.1
+""",
+        set()
+    ],
 ],
                          ids=[
                              'not-a-string',
@@ -253,6 +268,8 @@ another = pd.read_parquet('/path/to/parquet.parquet')
                              'absolute-path-windows-backslash',
                              'relative-path-windows-backslash',
                              'multiple',
+                             'matplotlib-settings',
+                             'matplotlib-settings-another',
                          ])
 def test_paths(source, expected):
     assert parse.paths(source) == expected

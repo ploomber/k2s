@@ -101,6 +101,34 @@ def local_files(source):
     return string_literals(source, evaluator=evaluator)
 
 
+def _is_matplotlib_setting(leaf):
+    """
+    Determine if a string literal is a matplotlib's setting
+    """
+
+    def check(leaf):
+        parent = leaf.parent
+        grandparent = leaf.parent.parent
+
+        left, right = parent.children[0].value, parent.children[-1].value
+        # when doing:
+        # import matplotlib as mpl
+        # mpl.rcParams['figure.figsize'] = (12, 8)
+        var_nested = grandparent.children[1].children[1].value
+        # when doing:
+        # from matplotlib import rcParams
+        # rcParams['axes.xmargin'] = 0.1
+        var = grandparent.children[0].value
+
+        return left == '[' and right == ']' and (var_nested == 'rcParams'
+                                                 or var == 'rcParams')
+
+    try:
+        return check(leaf)
+    except Exception:
+        return False
+
+
 def paths(source, *, raw=False):
     """
     Given some source code, parse string literals that look like paths
@@ -119,7 +147,8 @@ def paths(source, *, raw=False):
 
         path = constructor(value)
 
-        return len(path.parts) >= 2 or path.suffix
+        return not _is_matplotlib_setting(leaf) and (len(path.parts) >= 2
+                                                     or path.suffix)
 
     return string_literals(source, evaluator=evaluator, raw=raw)
 
