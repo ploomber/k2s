@@ -145,7 +145,7 @@ def paths(source, *, raw=False):
         constructor = (PureWindowsPath
                        if ':' in value or '\\' in value else PurePosixPath)
 
-        path = constructor(value)
+        path = constructor(value[1:-1])
 
         return not _is_matplotlib_setting(leaf) and (len(path.parts) >= 2
                                                      or path.suffix)

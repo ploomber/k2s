@@ -257,6 +257,24 @@ rcParams['axes.xmargin'] = 0.1
 """,
         set()
     ],
+    [
+        """
+something = '.'
+""",
+        set(),
+    ],
+    [
+        """
+something = ".."
+""",
+        set(),
+    ],
+    [
+        """
+something = ''
+""",
+        set(),
+    ],
 ],
                          ids=[
                              'not-a-string',
@@ -270,6 +288,9 @@ rcParams['axes.xmargin'] = 0.1
                              'multiple',
                              'matplotlib-settings',
                              'matplotlib-settings-another',
+                             'dot',
+                             'dot-double',
+                             'empty-string',
                          ])
 def test_paths(source, expected):
     assert parse.paths(source) == expected
