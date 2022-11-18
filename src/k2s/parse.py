@@ -148,10 +148,13 @@ def paths(source, *, raw=False):
         path = constructor(value[1:-1])
 
         return not _is_matplotlib_setting(leaf) and (len(path.parts) >= 2
-                                                     or path.suffix)
+                                                     or _valid_suffix(path))
 
     return string_literals(source, evaluator=evaluator, raw=raw)
 
+
+def _valid_suffix(path):
+    return path.suffix and re.search(r'\s+', path.suffix) is None
 
 def string_literals(source, *, evaluator=None, raw=False):
     """Find string literals in the source code

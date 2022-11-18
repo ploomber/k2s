@@ -275,6 +275,12 @@ something = ''
 """,
         set(),
     ],
+    [
+        """
+something = 'something vs. another'
+""",
+        set(),
+    ],
 ],
                          ids=[
                              'not-a-string',
@@ -291,6 +297,7 @@ something = ''
                              'dot',
                              'dot-double',
                              'empty-string',
+                             'dot-with-spaces',
                          ])
 def test_paths(source, expected):
     assert parse.paths(source) == expected
