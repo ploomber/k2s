@@ -156,6 +156,7 @@ def paths(source, *, raw=False):
 def _valid_suffix(path):
     return path.suffix and re.search(r'\s+', path.suffix) is None
 
+
 def string_literals(source, *, evaluator=None, raw=False):
     """Find string literals in the source code
 
