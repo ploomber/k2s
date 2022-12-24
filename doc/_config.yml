@@ -1,0 +1,27 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: k2s
+author: Ploomber
+logo: square-no-bg-small.png
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: auto
+
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: book.tex
+
+repository:
+  url: https://github.com/ploomber/k2s
+  path_to_book: doc
+  branch: main
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
