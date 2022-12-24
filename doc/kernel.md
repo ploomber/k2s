@@ -3,7 +3,7 @@
 
 Download sample notebook:
 
-```{code-cell}
+```python
 from urllib.request import urlretrieve
 
 urlretrieve("https://raw.githubusercontent.com/ploomber/k2s/main/examples/simple.ipynb",
@@ -12,14 +12,14 @@ urlretrieve("https://raw.githubusercontent.com/ploomber/k2s/main/examples/simple
 
 ## Install in the current kernel
 
-```{code-cell}
+```python
 from k2s import bootstrap_env
 bootstrap_env("sample-demo.ipynb", name=None)
 ```
 
 ## Create new kernel
 
-```{code-cell}
+```python
 from k2s import bootstrap_env
 bootstrap_env("sample-demo.ipynb", name="my-new-kernel")
 ```
