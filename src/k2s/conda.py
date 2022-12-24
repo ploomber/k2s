@@ -23,20 +23,34 @@ BASE_MINI = "https://repo.anaconda.com/miniconda"
 
 # https://docs.python.org/3/library/sys.html#sys.platform
 URLS = {
-    'linux': f"{BASE_MINI}/Miniconda3-latest-Linux-x86_64.sh",
-    'darwin': f"{BASE_MINI}/Miniconda3-latest-MacOSX-x86_64.sh",
+    "linux": f"{BASE_MINI}/Miniconda3-latest-Linux-x86_64.sh",
+    "darwin": f"{BASE_MINI}/Miniconda3-latest-MacOSX-x86_64.sh",
 }
 
-MINI_3_7 = (f"{BASE_MINI}/Miniconda3-py37_4.12.0-Linux-x86_64.sh")
+MINI_3_7 = f"{BASE_MINI}/Miniconda3-py37_4.12.0-Linux-x86_64.sh"
 
 IS_KAGGLE = "KAGGLE_DOCKER_IMAGE" in environ
-IS_COLAB = "COLAB_GPU" in environ
 
 telemetry = Telemetry(
     api_key="phc_P9SpSeypyPwxrMdFn2edOOEooQioF2axppyEeDwtMSP",
     package_name="k2s",
     version=version("k2s"),
 )
+
+
+def _is_colab():
+    """Returns: True for Google Colab env"""
+    try:
+        import google.colab  # noqa
+
+        in_colab = True
+    except ModuleNotFoundError:
+        in_colab = False
+    finally:
+        return in_colab
+
+
+IS_COLAB = _is_colab()
 
 
 class CondaManager:
@@ -55,15 +69,15 @@ class CondaManager:
         self.install_conda = install_conda
 
         if not shutil.which("conda") and not install_conda:
-            raise RuntimeError("conda is not installed, to install it "
-                               "pass install_conda=True")
+            raise RuntimeError(
+                "conda is not installed, to install it " "pass install_conda=True"
+            )
 
-        has_local_conda = (self.get_config_directory() / 'conda').is_dir()
+        has_local_conda = (self.get_config_directory() / "conda").is_dir()
 
-        if (not shutil.which('conda')
-                or install_conda) and not has_local_conda:
+        if (not shutil.which("conda") or install_conda) and not has_local_conda:
             home = self.get_config_directory()
-            self.install_conda_in_prefix(str(home / 'conda'))
+            self.install_conda_in_prefix(str(home / "conda"))
 
         # ensure mamba is installed in the base prefix
         prefix = self.get_base_prefix()
@@ -85,8 +99,7 @@ class CondaManager:
         return url
 
     def install_conda_in_prefix(self, prefix):
-        """Installs miniconda in the given prefix
-        """
+        """Installs miniconda in the given prefix"""
         print(f"Installing conda ({prefix!r})...")
         urllib.request.urlretrieve(self._get_conda_url(), "miniconda.sh")
         _run_command(["bash", "miniconda.sh", "-b", "-f", "-p", prefix])
@@ -95,16 +108,18 @@ class CondaManager:
     def install_mamba_in_prefix(self, prefix):
         if not Path(prefix, "bin", "mamba").exists():
             print("Installing mamba...")
-            _run_command([
-                self.get_base_conda_bin(),
-                "install",
-                "mamba",
-                "-c",
-                "conda-forge",
-                "-y",
-                "--prefix",
-                prefix,
-            ])
+            _run_command(
+                [
+                    self.get_base_conda_bin(),
+                    "install",
+                    "mamba",
+                    "-c",
+                    "conda-forge",
+                    "-y",
+                    "--prefix",
+                    prefix,
+                ]
+            )
             print("Done installing mamba.")
         else:
             print("mamba already installed...")
@@ -135,16 +150,14 @@ class CondaManager:
         # "installing"
         print(
             "Installing dependencies, this might take a few minutes. "
-            "Join our community while you wait: https://ploomber.io/community")
+            "Join our community while you wait: https://ploomber.io/community"
+        )
 
         spec = {
-            "name":
-            name,
+            "name": name,
             "channels": ["conda-forge", "default"],
-            "dependencies":
-            list(requirements) +
-            ["pip", "ipykernel", "python",
-             dict(pip=requirements_pip)],
+            "dependencies": list(requirements)
+            + ["pip", "ipykernel", "python", dict(pip=requirements_pip)],
         }
 
         Path("env.yml").write_text(json.dumps(spec))
@@ -158,21 +171,21 @@ class CondaManager:
         # if the environment exists, we must pin Python
         # should I pin ipykernel as well?
         if Path(prefix).exists():
-            bin = str(Path(prefix, 'bin', 'python'))
-            cmd = ("from sys import version_info as v"
-                   "; print(f'{v.major}.{v.minor}.{v.micro}')")
-            out = subprocess.run([bin, "-c", cmd],
-                                 check=True,
-                                 capture_output=True)
+            bin = str(Path(prefix, "bin", "python"))
+            cmd = (
+                "from sys import version_info as v"
+                "; print(f'{v.major}.{v.minor}.{v.micro}')"
+            )
+            out = subprocess.run([bin, "-c", cmd], check=True, capture_output=True)
             version = out.stdout.decode().strip()
             Path(prefix, "conda-meta").mkdir(exist_ok=True)
             pinned_path = Path(prefix, "conda-meta", "pinned")
             if pinned_path.exists():
                 pinned = pinned_path.read_text()
             else:
-                pinned = ''
+                pinned = ""
 
-            pinned_path.write_text(f'{pinned}\npython=={version}')
+            pinned_path.write_text(f"{pinned}\npython=={version}")
 
         cmd = [
             self.get_base_mamba_bin(),
@@ -195,17 +208,15 @@ class CondaManager:
         return prefix
 
     def get_config_directory(self):
-        """Returns the directory to store k2s configuration
-        """
-        home = Path('~', '.k2s').expanduser()
+        """Returns the directory to store k2s configuration"""
+        home = Path("~", ".k2s").expanduser()
         home.mkdir(exist_ok=True)
         return home
 
     def get_base_prefix(self):
-        """Get base conda base prefix to use for all commands
-        """
+        """Get base conda base prefix to use for all commands"""
         if self.install_conda:
-            return str(self.get_config_directory() / 'conda')
+            return str(self.get_config_directory() / "conda")
         else:
             # NOTE: is this the best way to retrieve this?
             # maybe sys.prefix?
@@ -219,21 +230,24 @@ class CondaManager:
 
     def get_active_prefix(self):
 
-        out = subprocess.run([self.get_base_conda_bin(), 'info', '--json'],
-                             check=True,
-                             capture_output=True)
+        out = subprocess.run(
+            [self.get_base_conda_bin(), "info", "--json"],
+            check=True,
+            capture_output=True,
+        )
 
-        active_prefix = json.loads(out.stdout.decode())['active_prefix']
+        active_prefix = json.loads(out.stdout.decode())["active_prefix"]
 
         if not active_prefix:
-            raise RuntimeError("Unable to determine current environment. "
-                               "For help: https://ploomber.io/community")
+            raise RuntimeError(
+                "Unable to determine current environment. "
+                "For help: https://ploomber.io/community"
+            )
 
         return active_prefix
 
     def prune():
-        """Delete all environments and kernels
-        """
+        """Delete all environments and kernels"""
         # also delete local conda installation
         pass
 
@@ -244,13 +258,12 @@ class ColabConfig(Config):
     def path(cls):
         # remove this once this is closed:
         # https://github.com/ploomber/core/issues/16
-        path_to_cfg = Path('~/.k2s/colab/config.yaml').expanduser()
+        path_to_cfg = Path("~/.k2s/colab/config.yaml").expanduser()
         path_to_cfg.parent.mkdir(exist_ok=True, parents=True)
         return path_to_cfg
 
 
 class ColabCondaManager(CondaManager):
-
     def __init__(self, install_conda=True) -> None:
         self.pre_setup()
 
@@ -263,27 +276,30 @@ class ColabCondaManager(CondaManager):
 
     def pre_setup(self):
         if not IS_COLAB:
-            raise RuntimeError(
-                f"{type(self).__name__} should only be used in Colab")
+            raise RuntimeError(f"{type(self).__name__} should only be used in Colab")
 
         # this is not added by default on Colab
-        sys.path.insert(
-            0, f"{self.get_active_prefix()}/lib/python3.7/site-packages")
+        sys.path.insert(0, f"{self.get_active_prefix()}/lib/python3.7/site-packages")
 
     def post_conda_install(self):
         os.rename(sys.executable, f"{sys.executable}.colab")
-        LD_LIBRARY_PATH = (f"{self.get_active_prefix()}/lib"
-                           f":{os.environ.get('LD_LIBRARY_PATH', '')}")
+        LD_LIBRARY_PATH = (
+            f"{self.get_active_prefix()}/lib"
+            f":{os.environ.get('LD_LIBRARY_PATH', '')}"
+        )
 
-        Path(sys.executable).write_text(f"""\
+        Path(sys.executable).write_text(
+            f"""\
 #!/bin/bash
 export LD_LIBRARY_PATH={LD_LIBRARY_PATH}
 {sys.executable}.colab -x $@
-""")
+"""
+        )
 
         subprocess.run(["chmod", "+x", sys.executable], check=True)
 
         from IPython import get_ipython
+
         get_ipython().kernel.do_shutdown(restart=True)
         raise KernelRestartRequired
 
@@ -298,11 +314,9 @@ export LD_LIBRARY_PATH={LD_LIBRARY_PATH}
 
 
 class KaggleCondaManager(CondaManager):
-
     def pre_setup(self):
         if not IS_KAGGLE:
-            raise RuntimeError(
-                f"{type(self).__name__} should only be used in Kaggle")
+            raise RuntimeError(f"{type(self).__name__} should only be used in Kaggle")
 
     def get_base_prefix(self):
         return "/opt/conda"
@@ -311,17 +325,16 @@ class KaggleCondaManager(CondaManager):
         return self.get_base_prefix()
 
 
-@telemetry.log_call('k2s-install')
+@telemetry.log_call("k2s-install")
 def install(requirements):
-    """Install packages
-    """
+    """Install packages"""
     cfg = None
 
     if IS_COLAB:
         cfg = ColabConfig()
 
         if requirements == cfg.install_requirements_argument:
-            print('Packages already installed...')
+            print("Packages already installed...")
             # instantiate the manager since it'll configure the path for
             # Colab to work
             ColabCondaManager()
