@@ -9,7 +9,7 @@ def test_install():
     env.install("some-env", ["scikit-learn", "pandas"])
 
     # ensure the new kernel works
-    km = KernelManager(kernel_name='some-env')
+    km = KernelManager(kernel_name="some-env")
     km.start_kernel()
     kc = km.client()
     kc.start_channels()

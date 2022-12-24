@@ -12,11 +12,11 @@ from isort import place_module
 from k2s.env import install
 from k2s.index import ChannelData
 
-_BUILT_IN_EXTENSIONS = {'autoreload', 'storemagic'}
+_BUILT_IN_EXTENSIONS = {"autoreload", "storemagic"}
 
 _PACKAGE_MAPPING = {
-    'sklearn': 'scikit-learn',
-    'sql': 'jupysql',
+    "sklearn": "scikit-learn",
+    "sql": "jupysql",
 }
 
 
@@ -35,19 +35,21 @@ def download_files(source, url):
     for file in files:
         try:
             # TODO: if .py or .ipynb, there might be more packages to install
-            urllib.request.urlretrieve(f'{base}/{file}', file)
-            print(f'Downloaded filed used in notebook: {file}')
+            urllib.request.urlretrieve(f"{base}/{file}", file)
+            print(f"Downloaded filed used in notebook: {file}")
 
-            if Path(file).suffix == '.py':
+            if Path(file).suffix == ".py":
                 deps_ = extract_imports_from_path_to_script(file)
                 deps = deps | set(deps_)
-            elif Path(file).suffix == '.ipynb':
+            elif Path(file).suffix == ".ipynb":
                 deps_ = extract_imports_from_path_to_notebook(file)
                 deps = deps | set(deps_)
 
         except HTTPError as e:
-            print("It appears the notebook is using "
-                  f"a file named {file!r}, but downloading it failed: {e}")
+            print(
+                "It appears the notebook is using "
+                f"a file named {file!r}, but downloading it failed: {e}"
+            )
 
     return deps
 
@@ -72,7 +74,7 @@ def local_files(source):
     # Path("file.txt")
     # pd.read_{fmt}("path.ext")
     # look for calls to these functions
-    targets = {'read', 'Path'}
+    targets = {"read", "Path"}
 
     # TODO: ploomber-specific: pipeline.yaml (DAGSpec.find())
     # or ploomber build
@@ -80,14 +82,14 @@ def local_files(source):
     # TODO: ignore things like s3://
 
     def evaluator(leaf):
-        is_string = leaf.type == 'string'
+        is_string = leaf.type == "string"
 
         if not is_string:
             return False
 
         prev = leaf.get_previous_leaf()
 
-        if prev.type == 'operator' and prev.value == '=':
+        if prev.type == "operator" and prev.value == "=":
             prev = _get_previous_leaf(leaf, levels=4)
         else:
             prev = _get_previous_leaf(leaf, levels=2)
@@ -95,8 +97,9 @@ def local_files(source):
         if prev is None:
             return is_string
 
-        return prev.value in targets or (prev.value.startswith('read_')
-                                         and prev.value != 'read_sql')
+        return prev.value in targets or (
+            prev.value.startswith("read_") and prev.value != "read_sql"
+        )
 
     return string_literals(source, evaluator=evaluator)
 
@@ -120,8 +123,11 @@ def _is_matplotlib_setting(leaf):
         # rcParams['axes.xmargin'] = 0.1
         var = grandparent.children[0].value
 
-        return left == '[' and right == ']' and (var_nested == 'rcParams'
-                                                 or var == 'rcParams')
+        return (
+            left == "["
+            and right == "]"
+            and (var_nested == "rcParams" or var == "rcParams")
+        )
 
     try:
         return check(leaf)
@@ -135,26 +141,28 @@ def paths(source, *, raw=False):
     """
 
     def evaluator(leaf):
-        is_string = leaf.type == 'string'
+        is_string = leaf.type == "string"
 
         if not is_string:
             return False
 
         value = leaf.value
 
-        constructor = (PureWindowsPath
-                       if ':' in value or '\\' in value else PurePosixPath)
+        constructor = (
+            PureWindowsPath if ":" in value or "\\" in value else PurePosixPath
+        )
 
         path = constructor(value[1:-1])
 
-        return not _is_matplotlib_setting(leaf) and (len(path.parts) >= 2
-                                                     or _valid_suffix(path))
+        return not _is_matplotlib_setting(leaf) and (
+            len(path.parts) >= 2 or _valid_suffix(path)
+        )
 
     return string_literals(source, evaluator=evaluator, raw=raw)
 
 
 def _valid_suffix(path):
-    return path.suffix and re.search(r'\s+', path.suffix) is None
+    return path.suffix and re.search(r"\s+", path.suffix) is None
 
 
 def string_literals(source, *, evaluator=None, raw=False):
@@ -172,7 +180,7 @@ def string_literals(source, *, evaluator=None, raw=False):
     if evaluator is None:
 
         def evaluator(leaf):
-            return leaf.type == 'string'
+            return leaf.type == "string"
 
     mod = parso.parse(source)
 
@@ -198,19 +206,22 @@ def extract_from_plain_text(text):
     # NOTE: +, :, /, and . are also required since users may have something
     # like: pip install git+https://github.com/ploomber/ploomber
     # we ignore those requirements but we need to parse them
-    matches = re.findall(r'pip install ([\w \-\+\:\/\.]+)', text)
+    matches = re.findall(r"pip install ([\w \-\+\:\/\.]+)", text)
     matches
 
-    deps = set([
-        item for sublist in [match.split() for match in matches]
-        for item in sublist
-        # ignore options passed to "pip install"
-        if not item.startswith('-')
-        # ignore git+URL and similar:
-        # https://pip.pypa.io/en/stable/topics/vcs-support/
-        if '+' not in item
-    ])
-    return list(deps - {'k2s'})
+    deps = set(
+        [
+            item
+            for sublist in [match.split() for match in matches]
+            for item in sublist
+            # ignore options passed to "pip install"
+            if not item.startswith("-")
+            # ignore git+URL and similar:
+            # https://pip.pypa.io/en/stable/topics/vcs-support/
+            if "+" not in item
+        ]
+    )
+    return list(deps - {"k2s"})
 
 
 # NOTE: imports might also be from local files, so we should download them
@@ -227,28 +238,31 @@ def packages_used(tree):
         return [i for sub in elements for i in sub]
 
     def _extract_names(node):
-        if hasattr(node, 'children'):
+        if hasattr(node, "children"):
             return extract_names(node.children[0])
         else:
             return [node.value]
 
     def extract_names(import_):
-        if import_.type == 'name':
+        if import_.type == "name":
             return [import_.value]
-        elif import_.type in {'dotted_name', 'dotted_as_name'}:
+        elif import_.type in {"dotted_name", "dotted_as_name"}:
             return [import_.children[0].value]
 
         second = import_.children[1]
 
-        if second.type in {'dotted_name', 'dotted_as_name'}:
+        if second.type in {"dotted_name", "dotted_as_name"}:
             return extract_names(second.children[0])
-        elif second.type == 'dotted_as_names':
+        elif second.type == "dotted_as_names":
             # import a as something, b as another
 
-            return flatten([
-                _extract_names(node) for i, node in enumerate(second.children)
-                if i % 2 == 0
-            ])
+            return flatten(
+                [
+                    _extract_names(node)
+                    for i, node in enumerate(second.children)
+                    if i % 2 == 0
+                ]
+            )
         else:
             return [second.value]
 
@@ -256,15 +270,16 @@ def packages_used(tree):
 
     # replace using pkg_name mapping and ignore standard lib
     pkgs_final = [
-        _PACKAGE_MAPPING.get(name, name) for name in pkgs
-        if place_module(name) == 'THIRDPARTY'
+        _PACKAGE_MAPPING.get(name, name)
+        for name in pkgs
+        if place_module(name) == "THIRDPARTY"
     ]
 
     # parse magics
     leaf = tree.get_first_leaf()
 
     while leaf:
-        if leaf.value == '%' and leaf.get_next_leaf().value == 'load_ext':
+        if leaf.value == "%" and leaf.get_next_leaf().value == "load_ext":
             ext_name = leaf.get_next_leaf().get_next_leaf().value
             if ext_name not in _BUILT_IN_EXTENSIONS:
                 pkgs_final.append(_PACKAGE_MAPPING.get(ext_name, ext_name))
@@ -277,32 +292,30 @@ def packages_used(tree):
 
 def extract_code(nb):
     try:
-        code = '\n'.join([
-            cell['source'] for cell in nb['cells']
-            if cell['cell_type'] == "code"
-        ])
+        code = "\n".join(
+            [cell["source"] for cell in nb["cells"] if cell["cell_type"] == "code"]
+        )
     except TypeError:
         # if passed a notebook read using json instead of nbformat
-        code = '\n'.join([
-            '\n'.join(c['source']) for c in nb['cells']
-            if c['cell_type'] == 'code'
-        ])
+        code = "\n".join(
+            ["\n".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
+        )
 
     return code
 
 
 def to_text(nb):
     try:
-        plain = '\n'.join([cell['source'] for cell in nb['cells']])
+        plain = "\n".join([cell["source"] for cell in nb["cells"]])
     except TypeError:
         # # if passed a notebook read using json instead of nbformat
-        plain = '\n'.join(['\n'.join(c['source']) for c in nb['cells']])
+        plain = "\n".join(["\n".join(c["source"]) for c in nb["cells"]])
 
     return plain
 
 
 def extract_imports_from_path_to_notebook(path):
-    nb = json.loads(Path(path).read_text(encoding='utf-8'))
+    nb = json.loads(Path(path).read_text(encoding="utf-8"))
     return extract_imports_from_notebook(nb)
 
 
@@ -328,9 +341,9 @@ def bootstrap_env(path_to_notebook, name=None, verbose=False):
     if name is None:
         print("name not supplied, installing in the current environment...")
 
-    print('Parsing notebook...')
+    print("Parsing notebook...")
     nb = nbformat.read(path_to_notebook, as_version=nbformat.NO_CONVERT)
-    imports = set(extract_imports_from_notebook(nb)) | {'k2s'}
+    imports = set(extract_imports_from_notebook(nb)) | {"k2s"}
 
     cd = ChannelData()
     conda, pip = cd.pkg_exists(imports)
@@ -343,13 +356,14 @@ def bootstrap_env(path_to_notebook, name=None, verbose=False):
     # to appear
     # TODO: only say "switch" to if on a different kernel
     if name is not None:
-        print('Kernel is ready! Refresh your browser and switch '
-              f'the kernel to: {name}')
+        print(
+            "Kernel is ready! Refresh your browser and switch " f"the kernel to: {name}"
+        )
 
     nb.metadata.kernelspec = {
-        'display_name': f'Python 3 ({name})',
-        'language': 'python',
-        'name': name,
+        "display_name": f"Python 3 ({name})",
+        "language": "python",
+        "name": name,
     }
 
     # override kernel spec - note that refreshing won't switch to this

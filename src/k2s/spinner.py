@@ -10,7 +10,7 @@ class Spinner:
     """
 
     def __init__(self, message="", delay=0.1):
-        self.spinner = itertools.cycle(['-', '/', '|', '\\'])
+        self.spinner = itertools.cycle(["-", "/", "|", "\\"])
         self.delay = delay
         self.busy = False
         self.spinner_visible = False
@@ -26,11 +26,11 @@ class Spinner:
     def remove_spinner(self, cleanup=False):
         with self._screen_lock:
             if self.spinner_visible:
-                sys.stdout.write('\b')
+                sys.stdout.write("\b")
                 self.spinner_visible = False
                 if cleanup:
-                    sys.stdout.write(' ')
-                    sys.stdout.write('\r')
+                    sys.stdout.write(" ")
+                    sys.stdout.write("\r")
                 sys.stdout.flush()
 
     def spinner_task(self):

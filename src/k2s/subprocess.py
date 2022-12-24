@@ -19,27 +19,28 @@ def _run_command(cmd):
             # size
             output = process.stdout.readline().decode()
 
-            if output == '' and process.poll() is not None:
+            if output == "" and process.poll() is not None:
                 break
 
             if output:
-                line = output.strip() + '  '
+                line = output.strip() + "  "
 
                 if DEBUG_MODE:
                     print(line)
                 else:
-                    out = ('\r' + ' ' * last_length + '\r' + line)
+                    out = "\r" + " " * last_length + "\r" + line
                     sys.stdout.write(out)
                     sys.stdout.flush()
                     last_length = len(line)
 
-    print('\n', end='')
+    print("\n", end="")
 
     return_code = process.poll()
 
     if return_code:
         raise CLIError(
-            'An error happened:\n\n'
-            f'{process.stderr.read().decode()}\nFor help, share this error '
-            'in the #ask-anything channel in '
-            'our community: https://ploomber.io/community')
+            "An error happened:\n\n"
+            f"{process.stderr.read().decode()}\nFor help, share this error "
+            "in the #ask-anything channel in "
+            "our community: https://ploomber.io/community"
+        )

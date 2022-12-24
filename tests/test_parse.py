@@ -12,24 +12,27 @@ from k2s import parse
 # TODO: test extract_imports returns no duplicates (it currently does)
 
 
-@pytest.mark.parametrize('cells, expected', [
+@pytest.mark.parametrize(
+    "cells, expected",
     [
-        ["import pandas as pd", "import sklearn"],
-        ["pandas", "scikit-learn"],
+        [
+            ["import pandas as pd", "import sklearn"],
+            ["pandas", "scikit-learn"],
+        ],
+        [
+            ["%load_ext autoreload\nx=1", "%load_ext memory_profiler"],
+            ["memory_profiler"],
+        ],
+        [
+            ["%load_ext autoreload", "%load_ext sql\nprint(42)"],
+            ["jupysql"],
+        ],
+        [
+            ["import pandas as pd", "import sklearn.tree"],
+            ["pandas", "scikit-learn"],
+        ],
     ],
-    [
-        ["%load_ext autoreload\nx=1", "%load_ext memory_profiler"],
-        ["memory_profiler"],
-    ],
-    [
-        ["%load_ext autoreload", "%load_ext sql\nprint(42)"],
-        ["jupysql"],
-    ],
-    [
-        ["import pandas as pd", "import sklearn.tree"],
-        ["pandas", "scikit-learn"],
-    ],
-])
+)
 def test_extract_imports_from_notebook(cells, expected):
     nb = nbformat.v4.new_notebook()
     nb.cells = [nbformat.v4.new_code_cell(source=source) for source in cells]
@@ -37,45 +40,47 @@ def test_extract_imports_from_notebook(cells, expected):
     assert parse.extract_imports_from_notebook(nb) == expected
 
 
-@pytest.mark.parametrize('source, expected', [
+@pytest.mark.parametrize(
+    "source, expected",
     [
-        """
+        [
+            """
 ```sh
 pip install duckdb duckdb-engine pyarrow
 ```
 """,
-        {
-            'duckdb',
-            'duckdb-engine',
-            'pyarrow',
-        },
-    ],
-    [
-        """
+            {
+                "duckdb",
+                "duckdb-engine",
+                "pyarrow",
+            },
+        ],
+        [
+            """
 ```sh
 pip install duckdb duckdb-engine pyarrow --upgrade
 ```
 """,
-        {
-            'duckdb',
-            'duckdb-engine',
-            'pyarrow',
-        },
-    ],
-    [
-        """
+            {
+                "duckdb",
+                "duckdb-engine",
+                "pyarrow",
+            },
+        ],
+        [
+            """
 ```sh
 pip install duckdb duckdb-engine pyarrow -U
 ```
 """,
-        {
-            'duckdb',
-            'duckdb-engine',
-            'pyarrow',
-        },
-    ],
-    [
-        """
+            {
+                "duckdb",
+                "duckdb-engine",
+                "pyarrow",
+            },
+        ],
+        [
+            """
 ```sh
 pip install duckdb duckdb-engine pyarrow
 ```
@@ -84,14 +89,14 @@ pip install duckdb duckdb-engine pyarrow
 pip install pyarrow
 ```
 """,
-        {
-            'duckdb',
-            'duckdb-engine',
-            'pyarrow',
-        },
-    ],
-    [
-        """
+            {
+                "duckdb",
+                "duckdb-engine",
+                "pyarrow",
+            },
+        ],
+        [
+            """
 
 Try locally:
 
@@ -103,25 +108,26 @@ pip install k2s -U && k2s get ploomber/jupysql/main/examples/nb.ipynb
 pip install pyarrow
 ```
 """,
-        {'pyarrow'},
-    ],
-    [
-        """
+            {"pyarrow"},
+        ],
+        [
+            """
 ```python
 pip install git+https://github.com/ploomber/ploomber duckdb
 ```
 """,
-        {'duckdb'},
+            {"duckdb"},
+        ],
     ],
-],
-                         ids=[
-                             'simple',
-                             'double-dash-option',
-                             'single-dash-option',
-                             'duplicates',
-                             'ignores-itself',
-                             'ignores-git',
-                         ])
+    ids=[
+        "simple",
+        "double-dash-option",
+        "single-dash-option",
+        "duplicates",
+        "ignores-itself",
+        "ignores-git",
+    ],
+)
 def test_extract_from_plain_text(tmp_empty, source, expected):
     nb = nbformat.v4.new_notebook()
     nb.cells = [
@@ -143,21 +149,23 @@ pip install duckdb duckdb-engine pyarrow
     nb.cells = [
         nbformat.v4.new_code_cell(source="import pandas as pd"),
         nbformat.v4.new_code_cell(source="import sklearn"),
-        nbformat.v4.new_markdown_cell(source=md_source)
+        nbformat.v4.new_markdown_cell(source=md_source),
     ]
 
     assert set(parse.extract_imports_from_notebook(nb)) == {
-        'pandas',
-        'scikit-learn',
-        'duckdb',
-        'duckdb-engine',
-        'pyarrow',
+        "pandas",
+        "scikit-learn",
+        "duckdb",
+        "duckdb-engine",
+        "pyarrow",
     }
 
 
-@pytest.mark.parametrize('source, expected', [
+@pytest.mark.parametrize(
+    "source, expected",
     [
-        """
+        [
+            """
 df = pd.read_csv("some-file.txt")
 
 read('notebook.ipynb')
@@ -165,140 +173,147 @@ read('notebook.ipynb')
 nbformat.read('another.ipynb')
 
 path = Path("path/to/file.ext")
-""", {
-            'some-file.txt',
-            'notebook.ipynb',
-            'another.ipynb',
-            'path/to/file.ext',
-        }
-    ],
-    [
-        """
+""",
+            {
+                "some-file.txt",
+                "notebook.ipynb",
+                "another.ipynb",
+                "path/to/file.ext",
+            },
+        ],
+        [
+            """
 read(fp='notebook.ipynb')
 
 nbformat.read('another.ipynb', another="value")
-""", {
-            'notebook.ipynb',
-            'another.ipynb',
-        }
-    ],
-    [
-        """
+""",
+            {
+                "notebook.ipynb",
+                "another.ipynb",
+            },
+        ],
+        [
+            """
 invalid python code
 """,
-        set(),
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 df = pd.read_parquet("some-file.parquet")
 
 df_2 = pd.read_csv("some-file.csv")
 """,
-        {
-            'some-file.parquet',
-            'some-file.csv',
-        },
-    ],
-    [
-        """
+            {
+                "some-file.parquet",
+                "some-file.csv",
+            },
+        ],
+        [
+            """
 df = pd.read_sql("SELECT * FROM table", conn)
 """,
-        set(),
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 df = pd.read_csv(path)
 """,
-        set(),
+            set(),
+        ],
     ],
-],
-                         ids=[
-                             'various',
-                             'kwargs',
-                             'invalid',
-                             'pandas',
-                             'read_sql',
-                             'variable',
-                         ])
+    ids=[
+        "various",
+        "kwargs",
+        "invalid",
+        "pandas",
+        "read_sql",
+        "variable",
+    ],
+)
 def test_local_files(source, expected):
     assert parse.local_files(source) == expected
 
 
-@pytest.mark.parametrize('source, expected', [
-    ['x=1', set()],
-    ['some_variable="some-variable"', set()],
-    ['pd.read_csv("something.csv")', {'something.csv'}],
-    ['"path/to/file.txt"', {'path/to/file.txt'}],
-    ['"/path/to/file.txt"', {'/path/to/file.txt'}],
-    ['path="C:/path/to/file"', {'C:/path/to/file'}],
-    ['path="C:\\path\\to\\file"', {"C:\\path\\to\\file"}],
-    ['path="path\\to\\file"', {"path\\to\\file"}],
+@pytest.mark.parametrize(
+    "source, expected",
     [
-        """
+        ["x=1", set()],
+        ['some_variable="some-variable"', set()],
+        ['pd.read_csv("something.csv")', {"something.csv"}],
+        ['"path/to/file.txt"', {"path/to/file.txt"}],
+        ['"/path/to/file.txt"', {"/path/to/file.txt"}],
+        ['path="C:/path/to/file"', {"C:/path/to/file"}],
+        ['path="C:\\path\\to\\file"', {"C:\\path\\to\\file"}],
+        ['path="path\\to\\file"', {"path\\to\\file"}],
+        [
+            """
 import pandas as pd
 
 df = pd.read_csv('data.csv')
 
 another = pd.read_parquet('/path/to/parquet.parquet')
-""", {'data.csv', '/path/to/parquet.parquet'}
-    ],
-    [
-        """
+""",
+            {"data.csv", "/path/to/parquet.parquet"},
+        ],
+        [
+            """
 import matplotlib as mpl
 mpl.rcParams['figure.figsize'] = (12, 8)
 """,
-        set()
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 from matplotlib import rcParams
 
 rcParams['axes.xmargin'] = 0.1
 """,
-        set()
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 something = '.'
 """,
-        set(),
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 something = ".."
 """,
-        set(),
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 something = ''
 """,
-        set(),
-    ],
-    [
-        """
+            set(),
+        ],
+        [
+            """
 something = 'something vs. another'
 """,
-        set(),
+            set(),
+        ],
     ],
-],
-                         ids=[
-                             'not-a-string',
-                             'not-a-path',
-                             'filename',
-                             'relative-path',
-                             'absolute-path',
-                             'absolute-path-windows',
-                             'absolute-path-windows-backslash',
-                             'relative-path-windows-backslash',
-                             'multiple',
-                             'matplotlib-settings',
-                             'matplotlib-settings-another',
-                             'dot',
-                             'dot-double',
-                             'empty-string',
-                             'dot-with-spaces',
-                         ])
+    ids=[
+        "not-a-string",
+        "not-a-path",
+        "filename",
+        "relative-path",
+        "absolute-path",
+        "absolute-path-windows",
+        "absolute-path-windows-backslash",
+        "relative-path-windows-backslash",
+        "multiple",
+        "matplotlib-settings",
+        "matplotlib-settings-another",
+        "dot",
+        "dot-double",
+        "empty-string",
+        "dot-with-spaces",
+    ],
+)
 def test_paths(source, expected):
     assert parse.paths(source) == expected
 
@@ -307,10 +322,13 @@ def test_paths_raw():
     assert parse.paths('"some/file.txt"', raw=True) == {'"some/file.txt"'}
 
 
-@pytest.mark.parametrize('source, expected, raw', [
-    ["'file.csv'", {'file.csv'}, False],
-    ["'file.csv'", {"'file.csv'"}, True],
-])
+@pytest.mark.parametrize(
+    "source, expected, raw",
+    [
+        ["'file.csv'", {"file.csv"}, False],
+        ["'file.csv'", {"'file.csv'"}, True],
+    ],
+)
 def test_string_literals(source, expected, raw):
     assert parse.string_literals(source, raw=raw) == expected
 
@@ -322,10 +340,12 @@ Path("with-files-something.txt")
 Path("non-existing-file.txt")
 """
 
-    url = ("https://raw.githubusercontent.com/ploomber/k2s/main"
-           "/examples/with-files.ipynb")
+    url = (
+        "https://raw.githubusercontent.com/ploomber/k2s/main"
+        "/examples/with-files.ipynb"
+    )
 
     parse.download_files(source, url=url)
 
     assert os.listdir() == ["with-files-something.txt"]
-    assert Path("with-files-something.txt").read_text() == 'hello!\n'
+    assert Path("with-files-something.txt").read_text() == "hello!\n"

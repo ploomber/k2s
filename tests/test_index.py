@@ -3,11 +3,14 @@ import pytest
 from k2s.index import ChannelData
 
 
-@pytest.mark.parametrize('pkgs, not_exist, exist', [
-    [['some-unknown-package'], ['some-unknown-package'], []],
-    [['ploomber==0.21'], [], ['ploomber=0.21']],
-    [['ploomber=0.21'], [], ['ploomber=0.21']],
-])
+@pytest.mark.parametrize(
+    "pkgs, not_exist, exist",
+    [
+        [["some-unknown-package"], ["some-unknown-package"], []],
+        [["ploomber==0.21"], [], ["ploomber=0.21"]],
+        [["ploomber=0.21"], [], ["ploomber=0.21"]],
+    ],
+)
 def test_pkg_exists(pkgs, not_exist, exist):
     cd = ChannelData()
 
