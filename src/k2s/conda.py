@@ -27,7 +27,7 @@ URLS = {
     "darwin": f"{BASE_MINI}/Miniconda3-latest-MacOSX-x86_64.sh",
 }
 
-MINI_3_7 = f"{BASE_MINI}/Miniconda3-py37_4.12.0-Linux-x86_64.sh"
+MINI_3_8 = f"{BASE_MINI}/Miniconda3-py38_4.12.0-Linux-x86_64.sh"
 
 IS_KAGGLE = "KAGGLE_DOCKER_IMAGE" in environ
 
@@ -279,7 +279,10 @@ class ColabCondaManager(CondaManager):
             raise RuntimeError(f"{type(self).__name__} should only be used in Colab")
 
         # this is not added by default on Colab
-        sys.path.insert(0, f"{self.get_active_prefix()}/lib/python3.8/site-packages")
+        major, minor = sys.version_info.major, sys.version_info.minor
+        sys.path.insert(
+            0, f"{self.get_active_prefix()}/lib/python{major}.{minor}/site-packages"
+        )
 
     def post_conda_install(self):
         os.rename(sys.executable, f"{sys.executable}.colab")
@@ -310,7 +313,7 @@ export LD_LIBRARY_PATH={LD_LIBRARY_PATH}
         return self.get_base_prefix()
 
     def _get_conda_url(self):
-        return MINI_3_7
+        return MINI_3_8
 
 
 class KaggleCondaManager(CondaManager):
