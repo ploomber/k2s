@@ -1,6 +1,12 @@
 # CHANGELOG
 
 ## 0.1.7dev
+- Fixes Colab checking function
+- `k2s get` accepts GitHub URLS (the ontas that show notebook preview)
+- Adds `--no-jupyter` option to `k2s get` to skip opening Jupyter
+- Support for customizing `k2s` home path
+- `pkg_exists` supports pinned packages
+- Better path detection (ignore `matplotlib` settings, empty strings and extensions with spaces)
 
 ## 0.1.6 (2022-09-13)
 - Shows spinner when running long processes
