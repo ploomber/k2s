@@ -9,6 +9,7 @@ logo: square-no-bg-small.png
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: auto
+  timeout: 120
 
 # Define the name of the latex output file for PDF builds
 latex:
@@ -25,3 +26,7 @@ repository:
 html:
   use_issues_button: true
   use_repository_button: true
+
+sphinx:
+  config:
+    execution_show_tb: True

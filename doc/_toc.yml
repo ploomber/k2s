@@ -5,5 +5,5 @@ format: jb-book
 root: intro
 chapters:
 - file: colab
-- file: notebook-download
 - file: kernel
+- file: notebook-download

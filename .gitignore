@@ -1,3 +1,6 @@
+doc/simple-env
+*.ipynb
+
 .vscode
 doc/_build
 

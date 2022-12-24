@@ -40,13 +40,9 @@ install(["geopandas", "cartopy", "matplotlib"])
 Test:
 
 ```python
-import matplotlib.pyplot as plt
+import matplotlib
 import geopandas
-from cartopy import crs as ccrs
-
-path = geopandas.datasets.get_path('naturalearth_lowres')
-df = geopandas.read_file(path)
-_ = df.plot()
+from cartopy
 ```
 
 ## Example: install `pymc`
@@ -56,4 +52,10 @@ _ = df.plot()
 %pip install k2s --quiet
 from k2s import install
 install(["pymc"])
+```
+
+Test:
+
+```python
+import pymc
 ```
