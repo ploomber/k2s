@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.1.8dev
+## 0.1.8 (2022-12-24)
 - Adds support for Google Colab's new runtime (Python 3.8)
 
 ## 0.1.7 (2022-12-24)
