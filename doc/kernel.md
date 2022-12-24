@@ -1,7 +1,8 @@
 # Bootstrapping Jupyter kernels
 
+`k2s` allows you to install all required dependencies in a Jupyter notebook.
 
-Download sample notebook:
+Download sample notebook has `import pandas as pd`:
 
 ```python
 from urllib.request import urlretrieve
