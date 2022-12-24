@@ -279,7 +279,7 @@ class ColabCondaManager(CondaManager):
             raise RuntimeError(f"{type(self).__name__} should only be used in Colab")
 
         # this is not added by default on Colab
-        sys.path.insert(0, f"{self.get_active_prefix()}/lib/python3.7/site-packages")
+        sys.path.insert(0, f"{self.get_active_prefix()}/lib/python3.8/site-packages")
 
     def post_conda_install(self):
         os.rename(sys.executable, f"{sys.executable}.colab")
