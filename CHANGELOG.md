@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.1.7dev
+## 0.1.7 (2022-12-24)
 - Fixes Colab checking function
 - `k2s get` accepts GitHub URLS (the ontas that show notebook preview)
 - Adds `--no-jupyter` option to `k2s get` to skip opening Jupyter
