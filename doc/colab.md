@@ -1,6 +1,8 @@
 # `conda` on Google Colab
 
-```{tip}
+```{important}
+Ensure you're running `k2s>=0.1.8`.
+
 A Colab example is [available here.](https://colab.research.google.com/drive/1pPhAQpAhJcsiIDmsP1g8mSjZvU1d7VAg)
 ```
 
@@ -40,9 +42,13 @@ install(["geopandas", "cartopy", "matplotlib"])
 Test:
 
 ```python
-import matplotlib
+import matplotlib.pyplot as plt
 import geopandas
-from cartopy
+from cartopy import crs as ccrs
+
+path = geopandas.datasets.get_path('naturalearth_lowres')
+df = geopandas.read_file(path)
+_ = df.plot()
 ```
 
 ## Example: install `pymc`
