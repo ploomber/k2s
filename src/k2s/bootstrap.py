@@ -20,7 +20,7 @@ def path_to_bin(env_name, bin):
     return str(Path(env_name, dir, bin_name))
 
 
-def from_url(url):
+def from_url(url, open_jupyter=True):
     """
 
     >>> from k2s.bootstrap import from_url; from_url("URL")
@@ -36,10 +36,10 @@ def from_url(url):
     file = PurePosixPath(url).name
     urlretrieve(url, file)
 
-    return from_file(file, url=url)
+    return from_file(file, url=url, open_jupyter=True)
 
 
-def from_file(file, url=None):
+def from_file(file, url=None, open_jupyter=True):
     env_name = Path(file).stem + "-env"
 
     nb = json.loads(Path(file).read_text(encoding="utf-8"))
@@ -94,7 +94,13 @@ def from_file(file, url=None):
         capture_output=True,
     )
 
-    _run_command([path_to_python, "-m", "pip", "install", "jupyterlab"] + deps)
+    if open_jupyter:
+        deps = deps + ["jupyterlab"]
+
+    _run_command([path_to_python, "-m", "pip", "install"] + deps)
+
+    if not open_jupyter:
+        return
 
     print("Lauching Jupyter... (this might take a few seconds)")
 
